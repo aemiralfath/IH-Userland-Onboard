@@ -11,9 +11,9 @@ checkdb:
 	docker exec -it ih-userland-onboard_postgres_1 psql userland -U admin -c "\d users"
 
 migrateup:
-	migrate -path datastore/migrations -database "postgres://admin:admin@localhost:5433/userland?sslmode=disable" -verbose up
+	migrate -path datastore/migrations -database "postgres://admin:admin@localhost:5431/userland?sslmode=disable" -verbose up
 
 migratedown:
-	migrate -path datastore/migrations -database "postgres://admin:admin@localhost:5433/userland?sslmode=disable" -verbose down
+	migrate -path datastore/migrations -database "postgres://admin:admin@localhost:5431/userland?sslmode=disable" -verbose down
 
 .PHONY: postgres createdb dropdb migrateup migratedown checkdb

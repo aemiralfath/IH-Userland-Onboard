@@ -15,5 +15,5 @@
 # vendor/
 
 assets/profile
-go.sum
-data
+data/
+vendor/
