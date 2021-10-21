@@ -4,7 +4,15 @@ CREATE TABLE "auth" (
   "password" TEXT NOT NULL,
   "verified" BOOLEAN NOT NULL DEFAULT FALSE,
   "created_at" timestamptz NOT NULL DEFAULT (now()),
-  "updated_at" timestamptz NOT NULL DEFAULT (now())
+  "updated_at" timestamptz NOT NULL DEFAULT (now()),
+  "deleted_at" timestamptz
+);
+
+CREATE TABLE "password" (
+  "id" BIGSERIAL PRIMARY KEY,
+  "auth_id" BIGINT,
+  "password" TEXT NOT NULL,
+  "created_at" timestamptz NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE "users" (
@@ -54,6 +62,8 @@ CREATE TABLE "events" (
   "updated_at" timestamptz NOT NULL DEFAULT (now())
 );
 
+ALTER TABLE "password" ADD FOREIGN KEY ("auth_id") REFERENCES "auth" ("id");
+
 ALTER TABLE "users" ADD FOREIGN KEY ("auth_id") REFERENCES "auth" ("id");
 
 ALTER TABLE "tfa" ADD FOREIGN KEY ("auth_id") REFERENCES "auth" ("id");
@@ -67,6 +77,8 @@ ALTER TABLE "events" ADD FOREIGN KEY ("session_id") REFERENCES "sessions" ("id")
 ALTER TABLE "events" ADD FOREIGN KEY ("client_id") REFERENCES "client" ("id");
 
 CREATE INDEX ON "auth" ("email");
+
+CREATE INDEX ON "password" ("auth_id");
 
 CREATE INDEX ON "users" ("auth_id");
 
@@ -87,6 +99,12 @@ COMMENT ON COLUMN "auth"."verified" IS 'true verify, false not verify';
 COMMENT ON COLUMN "auth"."created_at" IS 'full RFC3339 format';
 
 COMMENT ON COLUMN "auth"."updated_at" IS 'full RFC3339 format';
+
+COMMENT ON COLUMN "auth"."deleted_at" IS 'full RFC3339 format';
+
+COMMENT ON COLUMN "password"."password" IS 'bcrypt';
+
+COMMENT ON COLUMN "password"."created_at" IS 'full RFC3339 format';
 
 COMMENT ON COLUMN "users"."updated_at" IS 'full RFC3339 format';
 
