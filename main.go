@@ -8,7 +8,7 @@ import (
 	"github.com/go-chi/chi/middleware"
 )
 
-func main(){
+func main() {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Logger)
