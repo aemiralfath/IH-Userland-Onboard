@@ -16,4 +16,7 @@ migrateup:
 migratedown:
 	migrate -path datastore/migrations -database "postgres://admin:admin@localhost:5431/userland?sslmode=disable" -verbose down
 
-.PHONY: postgres createdb dropdb migrateup migratedown checkdb
+migratedirty:
+	migrate -path datastore/migrations -database "postgres://admin:admin@localhost:5431/userland?sslmode=disable" force 000001
+
+.PHONY: postgres createdb dropdb migrateup migratedown checkdb migratedirty

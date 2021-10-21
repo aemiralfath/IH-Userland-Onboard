@@ -7,17 +7,17 @@ import (
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 )
 
-type AuthStore struct {
+type ProfileStore struct {
 	db *sql.DB
 }
 
-func NewAuthStore(db *sql.DB) datastore.AuthStore {
-	return &AuthStore{
+func NewProfileStore(db *sql.DB) datastore.ProfileStore {
+	return &ProfileStore{
 		db: db,
 	}
 }
 
-func (us *AuthStore) GetAuth(ctx context.Context) error {
+func (us *ProfileStore) GetProfile(ctx context.Context) error {
 	_, _ = us.db.QueryContext(ctx, "")
 	return nil
 }

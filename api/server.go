@@ -32,7 +32,8 @@ type DataSource struct {
 
 type stores struct {
 	userStore datastore.UserStore
-	authStore datastore.AuthStore
+	profileStore datastore.ProfileStore
+	passwordStore datastore.PasswordStore
 }
 
 type Server struct {
@@ -50,10 +51,12 @@ func NewServer(config ServerConfig, dataSource *DataSource) *Server {
 
 func (s *Server) initStores() error {
 	userStore := postgres.NewUserStore(s.DataSource.PostgresDB)
-	authStore := postgres.NewAuthStore(s.DataSource.PostgresDB)
+	profileStore := postgres.NewProfileStore(s.DataSource.PostgresDB)
+	passwordStore := postgres.NewPasswordStore(s.DataSource.PostgresDB)
 	s.stores = &stores {
 		userStore: userStore,
-		authStore: authStore,
+		profileStore: profileStore,
+		passwordStore: passwordStore,
 	}
 	return nil
 }
@@ -61,7 +64,22 @@ func (s *Server) initStores() error {
 func (s *Server) createHandlers() http.Handler {
 	// TODO pprof and healthcheck
 	r := chi.NewRouter()
-	r.Get("/", auth.Register(s.stores.authStore))
+
+	r.Get("/", func(rw http.ResponseWriter, r *http.Request) {
+		rw.Write([]byte("Hi"))
+	})
+
+	r.Route("/auth", func(r chi.Router) {
+		r.Post("/register", auth.Register(s.stores.userStore, s.stores.profileStore, s.stores.passwordStore))
+		r.Post("/verification", auth.Verification(s.stores.userStore))
+		r.Post("/login", auth.Login(s.stores.userStore))
+
+		r.Route("/password", func(r chi.Router) {
+			r.Post("/forgot", auth.ForgotPassword(s.stores.userStore))
+			r.Post("/reset", auth.ResetPassword(s.stores.userStore))
+		})
+	})
+
 	return r
 }
 
