@@ -23,7 +23,15 @@ CREATE TABLE "auth" (
   "password" TEXT NOT NULL,
   "verified" BOOLEAN NOT NULL DEFAULT FALSE,
   "created_at" timestamptz NOT NULL DEFAULT (now()),
-  "updated_at" timestamptz NOT NULL DEFAULT (now())
+  "updated_at" timestamptz NOT NULL DEFAULT (now()),
+  "deleted_at" timestamptz
+);
+
+CREATE TABLE "password" (
+  "id" BIGSERIAL PRIMARY KEY,
+  "auth_id" BIGINT,
+  "password" TEXT NOT NULL,
+  "created_at" timestamptz NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE "users" (
@@ -73,6 +81,8 @@ CREATE TABLE "events" (
   "updated_at" timestamptz NOT NULL DEFAULT (now())
 );
 
+ALTER TABLE "password" ADD FOREIGN KEY ("auth_id") REFERENCES "auth" ("id");
+
 ALTER TABLE "users" ADD FOREIGN KEY ("auth_id") REFERENCES "auth" ("id");
 
 ALTER TABLE "tfa" ADD FOREIGN KEY ("auth_id") REFERENCES "auth" ("id");
@@ -86,6 +96,8 @@ ALTER TABLE "events" ADD FOREIGN KEY ("session_id") REFERENCES "sessions" ("id")
 ALTER TABLE "events" ADD FOREIGN KEY ("client_id") REFERENCES "client" ("id");
 
 CREATE INDEX ON "auth" ("email");
+
+CREATE INDEX ON "password" ("auth_id");
 
 CREATE INDEX ON "users" ("auth_id");
 
@@ -107,6 +119,12 @@ COMMENT ON COLUMN "auth"."created_at" IS 'full RFC3339 format';
 
 COMMENT ON COLUMN "auth"."updated_at" IS 'full RFC3339 format';
 
+COMMENT ON COLUMN "auth"."deleted_at" IS 'full RFC3339 format';
+
+COMMENT ON COLUMN "password"."password" IS 'bcrypt';
+
+COMMENT ON COLUMN "password"."created_at" IS 'full RFC3339 format';
+
 COMMENT ON COLUMN "users"."updated_at" IS 'full RFC3339 format';
 
 COMMENT ON COLUMN "tfa"."secret" IS 'secret code tfa';
@@ -120,7 +138,6 @@ COMMENT ON COLUMN "sessions"."is_current" IS 'true login, false not login';
 COMMENT ON COLUMN "events"."created_at" IS 'full RFC3339 format';
 
 COMMENT ON COLUMN "events"."updated_at" IS 'full RFC3339 format';
-
 ```
 
 #### 2. dbdiagram.io script
@@ -133,9 +150,21 @@ Table auth {
   verified BOOLEAN [not null, default: FALSE, note: 'true verify, false not verify']
   created_at timestamptz [not null, default: `now()`, note: 'full RFC3339 format']
   updated_at timestamptz [not null, default: `now()`, note: 'full RFC3339 format']
+  deleted_at timestamptz [note: 'full RFC3339 format']
   
   indexes{
     email
+  }
+}
+
+Table password {
+  id BIGSERIAL [pk]
+  auth_id BIGINT [ref: > auth.id]
+  password TEXT [not null, note: 'bcrypt']
+  created_at timestamptz [not null, default: `now()`, note: 'full RFC3339 format']
+  
+  indexes {
+    auth_id
   }
 }
 
