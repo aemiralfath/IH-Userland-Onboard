@@ -12,7 +12,7 @@ type ProfileStore interface {
 
 type UserStore interface {
 	GetUser(ctx context.Context) error
-	AddNewUser(ctx context.Context, user *models.User) error
+	AddNewUser(ctx context.Context, user *models.User, profile *models.Profile, password *models.Password) error
 }
 
 type PasswordStore interface {

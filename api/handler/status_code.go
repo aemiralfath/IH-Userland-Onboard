@@ -8,7 +8,7 @@ import (
 
 type Response struct {
 	Err        error  `json:"-"`
-	StatusCode int    `json:"-"`
+	StatusCode int    `json:"code"`
 	Message    string `json:"message"`
 }
 
