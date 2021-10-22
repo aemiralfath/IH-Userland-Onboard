@@ -3,6 +3,8 @@ package auth
 import (
 	"fmt"
 	"net/http"
+	"net/smtp"
+	"os"
 	"strings"
 	"unicode"
 
@@ -10,6 +12,7 @@ import (
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore/models"
 	"github.com/go-chi/render"
+	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -27,27 +30,55 @@ func Register(userStore datastore.UserStore, profileStore datastore.ProfileStore
 		req := &registerRequest{}
 
 		if err := render.Bind(r, req); err != nil {
-			render.Render(w, r, handler.BadRequestErrorRenderer(err))
+			fmt.Println(render.Render(w, r, handler.BadRequestErrorRenderer(err)))
 			return
 		}
 
 		hashPassword, err := hash(req.Password)
 		if err != nil {
-			render.Render(w, r, handler.InternalServerErrorRenderer(err))
+			fmt.Println(render.Render(w, r, handler.InternalServerErrorRenderer(err)))
 			return
 		}
 
 		req.Password = string(hashPassword)
 		if err := userStore.AddNewUser(ctx, parseHandlerUser(req), parseHandlerProfile(req), parseHandlerPassword(req)); err != nil {
-			render.Render(w, r, handler.InternalServerErrorRenderer(err))
+			fmt.Println(render.Render(w, r, handler.InternalServerErrorRenderer(err)))
+			return
+		}
+
+		if err := sendEmailVerification(req.Email); err != nil {
+			fmt.Println(render.Render(w, r, handler.InternalServerErrorRenderer(err)))
 			return
 		}
 
 		if err := render.Render(w, r, handler.SuccesRenderer("Success")); err != nil {
-			render.Render(w, r, handler.InternalServerErrorRenderer(err))
+			fmt.Println(render.Render(w, r, handler.InternalServerErrorRenderer(err)))
 			return
 		}
+		fmt.Println("Here!")
 	}
+}
+
+func sendEmailVerification(toEmail string) error {
+	from := "criptdestroyer@gmail.com"
+	msg := []byte("To: " + toEmail + "\r\n" +
+		"From: " + from + "\r\n" +
+		"Subject: Userland Email Verification!\r\n" +
+		"\r\n" +
+		"This is the email is sent using golang and sendinblue.\r\n")
+
+	err := godotenv.Load(".env")
+	if err != nil {
+		return fmt.Errorf("Error loading .env file")
+	}
+
+	auth := smtp.PlainAuth("", from, os.Getenv("PASSWORD"), os.Getenv("SMTP_HOST"))
+	smtpAddress := fmt.Sprintf("%s:%v", os.Getenv("SMTP_HOST"), os.Getenv("SMTP_PORT"))
+	err = smtp.SendMail(smtpAddress, auth, from, []string{toEmail}, msg)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func parseHandlerUser(u *registerRequest) *models.User {
