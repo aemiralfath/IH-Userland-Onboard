@@ -19,10 +19,10 @@ type JWTAuth struct {
 }
 
 var (
-	TokenCtxKey = &contextKey{"Token"}
-	ErrorCtxKey = &contextKey{"Error"}
-	AccessTokenExpiration  = 300
-	RefreshTokenExpiration = 86400
+	TokenCtxKey            = &contextKey{"Token"}
+	ErrorCtxKey            = &contextKey{"Error"}
+	AccessTokenExpiration  = 300 * 1000000000
+	RefreshTokenExpiration = 86400 * 1000000000
 )
 
 var (

@@ -17,7 +17,18 @@ func NewProfileStore(db *sql.DB) datastore.ProfileStore {
 	}
 }
 
-func (us *ProfileStore) GetProfile(ctx context.Context) error {
-	_, _ = us.db.QueryContext(ctx, "")
-	return nil
+func (us *ProfileStore) GetProfile(ctx context.Context, userId float64) (*datastore.Profile, error) {
+	sql := `SELECT * FROM "profile" WHERE "user_id" = $1`
+	stmt, err := us.db.Prepare(sql)
+	if err != nil {
+		return nil, err
+	}
+
+	var prof datastore.Profile
+	err = stmt.QueryRowContext(ctx, userId).Scan(&prof.ID, &prof.UserId, &prof.Fullname, &prof.Location, &prof.Bio, &prof.Web, &prof.Picture, &prof.CreatedAt, &prof.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+
+	return &prof, nil
 }

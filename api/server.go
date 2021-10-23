@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/aemiralfath/IH-Userland-Onboard/api/handler/auth"
+	"github.com/aemiralfath/IH-Userland-Onboard/api/handler/me"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore/postgres"
@@ -69,7 +70,7 @@ func (s *Server) initStores() error {
 
 func (s *Server) initJwt() error {
 	// user .env for secret
-	tokenAuth := helper.New("HS256", []byte("secretSign"), []byte("secretVerify"))
+	tokenAuth := helper.New("HS256", []byte("secretSign"), nil)
 	s.jwt = &jwtConfig{
 		tokenAuth: tokenAuth,
 	}
@@ -83,7 +84,7 @@ func (s *Server) createHandlers() http.Handler {
 	r.Group(func(r chi.Router) {
 		r.Use(helper.Verifier(s.jwt.tokenAuth))
 		r.Use(helper.Authenticator)
-
+		r.Get("/me", me.GetProfile(*s.jwt.tokenAuth, s.stores.profileStore))
 	})
 
 	r.Group(func(r chi.Router) {

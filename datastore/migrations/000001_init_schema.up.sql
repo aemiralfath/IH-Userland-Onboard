@@ -19,10 +19,11 @@ CREATE TABLE IF NOT EXISTS "profile" (
   "id" BIGSERIAL PRIMARY KEY,
   "user_id" BIGINT,
   "fullname" VARCHAR(128) NOT NULL,
-  "location" VARCHAR(128),
-  "bio" TEXT,
-  "web" VARCHAR(128),
-  "picture" VARCHAR(128),
+  "location" VARCHAR(128) NOT NULL DEFAULT '',
+  "bio" TEXT NOT NULL DEFAULT '',
+  "web" VARCHAR(128) NOT NULL DEFAULT '',
+  "picture" VARCHAR(128) NOT NULL DEFAULT '',
+  "created_at" timestamptz NOT NULL DEFAULT (now()),
   "updated_at" timestamptz NOT NULL DEFAULT (now())
 );
 

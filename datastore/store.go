@@ -22,6 +22,7 @@ type Profile struct {
 	Bio       string `json:"bio" sql:"bio"`
 	Web       string `json:"web" sql:"web"`
 	Picture   string `json:"picture" sql:"picture"`
+	CreatedAt string `json:"createdAt" sql:"created_at"`
 	UpdatedAt string `json:"updatedAt" sql:"updated_at"`
 }
 
@@ -33,7 +34,7 @@ type Password struct {
 }
 
 type ProfileStore interface {
-	GetProfile(ctx context.Context) error
+	GetProfile(ctx context.Context, userId float64) (*Profile, error)
 }
 
 type UserStore interface {

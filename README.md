@@ -17,7 +17,7 @@ Userland is account self-management system for Ice House Onboarding Project
 #### 1. Postgresql script
 
 ```sql
-CREATE TABLE "user" (
+CREATE TABLE IF NOT EXISTS "user" (
   "id" BIGSERIAL PRIMARY KEY,
   "email" VARCHAR(128) UNIQUE NOT NULL,
   "password" TEXT NOT NULL,
@@ -27,14 +27,14 @@ CREATE TABLE "user" (
   "deleted_at" timestamptz
 );
 
-CREATE TABLE "password" (
+CREATE TABLE IF NOT EXISTS "password" (
   "id" BIGSERIAL PRIMARY KEY,
   "user_id" BIGINT,
   "password" TEXT NOT NULL,
   "created_at" timestamptz NOT NULL DEFAULT (now())
 );
 
-CREATE TABLE "profile" (
+CREATE TABLE IF NOT EXISTS "profile" (
   "id" BIGSERIAL PRIMARY KEY,
   "user_id" BIGINT,
   "fullname" VARCHAR(128) NOT NULL,
@@ -42,10 +42,11 @@ CREATE TABLE "profile" (
   "bio" TEXT,
   "web" VARCHAR(128),
   "picture" VARCHAR(128),
+  "created_at" timestamptz NOT NULL DEFAULT (now()),
   "updated_at" timestamptz NOT NULL DEFAULT (now())
 );
 
-CREATE TABLE "tfa" (
+CREATE TABLE IF NOT EXISTS "tfa" (
   "id" BIGSERIAL PRIMARY KEY,
   "user_id" BIGINT,
   "secret" VARCHAR(128),
@@ -53,24 +54,24 @@ CREATE TABLE "tfa" (
   "enable_at" timestamptz
 );
 
-CREATE TABLE "tfa_codes" (
+CREATE TABLE IF NOT EXISTS "tfa_codes" (
   "id" BIGSERIAL PRIMARY KEY,
   "tfa_id" BIGINT,
   "code" VARCHAR(128) NOT NULL
 );
 
-CREATE TABLE "sessions" (
+CREATE TABLE IF NOT EXISTS "sessions" (
   "id" BIGSERIAL PRIMARY KEY,
   "user_id" BIGINT,
   "is_current" BOOLEAN NOT NULL DEFAULT TRUE
 );
 
-CREATE TABLE "client" (
+CREATE TABLE IF NOT EXISTS "client" (
   "id" BIGSERIAL PRIMARY KEY,
   "name" VARCHAR(128) NOT NULL
 );
 
-CREATE TABLE "events" (
+CREATE TABLE IF NOT EXISTS "events" (
   "id" BIGSERIAL PRIMARY KEY,
   "session_id" BIGINT,
   "client_id" BIGINT,
@@ -176,6 +177,7 @@ Table profile {
   bio TEXT
   web VARCHAR(128)
   picture VARCHAR(128)
+  created_at timestamptz [not null, default: `now()`, note: 'full RFC3339 format']
   updated_at timestamptz [not null, default: `now()`, note: 'full RFC3339 format']
   
   indexes {

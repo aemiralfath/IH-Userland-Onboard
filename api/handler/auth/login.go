@@ -31,14 +31,14 @@ func Login(jwtAuth helper.JWTAuth, userStore datastore.UserStore) http.HandlerFu
 
 		usr, err := userStore.GetUser(ctx, parseLoginUser(req))
 		if err != nil {
-			fmt.Println(render.Render(w, r, handler.BadRequestErrorRenderer(err)))
+			fmt.Println(render.Render(w, r, handler.InternalServerErrorRenderer(err)))
 			return
 		}
 
 		fmt.Printf("%d %s %s\n", usr.ID, usr.Email, usr.Password)
 
 		if err := confirmPassword(usr.Password, req.Password); err != nil {
-			fmt.Println(render.Render(w, r, handler.BadRequestErrorRenderer(err)))
+			fmt.Println(render.Render(w, r, handler.InternalServerErrorRenderer(err)))
 			return
 		}
 
@@ -50,24 +50,28 @@ func Login(jwtAuth helper.JWTAuth, userStore datastore.UserStore) http.HandlerFu
 
 		_, accessToken, err := jwtAuth.Encode(accessTokenClaims)
 		if err != nil {
-			fmt.Println(render.Render(w, r, handler.BadRequestErrorRenderer(err)))
+			fmt.Println(render.Render(w, r, handler.InternalServerErrorRenderer(err)))
 			return
 		}
 
-		refreshTokenClaims := make(map[string]interface{})
-		refreshTokenClaims["email"] = usr.Email
-		helper.SetIssuedNow(refreshTokenClaims)
-		helper.SetExpiryIn(refreshTokenClaims, time.Duration(helper.RefreshTokenExpiration))
+		// refreshTokenClaims := make(map[string]interface{})
+		// refreshTokenClaims["email"] = usr.Email
+		// helper.SetIssuedNow(refreshTokenClaims)
+		// helper.SetExpiryIn(refreshTokenClaims, time.Duration(helper.RefreshTokenExpiration))
 
-		_, refreshToken, err := jwtAuth.Encode(refreshTokenClaims)
-		if err != nil {
-			fmt.Println(render.Render(w, r, handler.BadRequestErrorRenderer(err)))
-			return
-		}
+		// _, refreshToken, err := jwtAuth.Encode(refreshTokenClaims)
+		// if err != nil {
+		// 	fmt.Println(render.Render(w, r, handler.BadRequestErrorRenderer(err)))
+		// 	return
+		// }
 
-		handler.CustomRender(w, http.StatusOK, map[string]string{
-			"access_token":  accessToken,
-			"refresh_token": refreshToken,
+		handler.CustomRender(w, http.StatusOK, map[string]interface{}{
+			"require_tfa": false,
+			"access_token": map[string]string{
+				"value":      accessToken,
+				"type":       "BEARER",
+				"expired_at": time.Unix(accessTokenClaims["exp"].(int64), 0).String(),
+			},
 		})
 	}
 }
