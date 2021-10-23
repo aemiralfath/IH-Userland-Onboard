@@ -5,13 +5,11 @@ import (
 	"database/sql"
 
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
-	"github.com/aemiralfath/IH-Userland-Onboard/datastore/models"
 )
 
 type UserStore struct {
 	db *sql.DB
 }
-
 
 func NewUserStore(db *sql.DB) datastore.UserStore {
 	return &UserStore{
@@ -19,12 +17,23 @@ func NewUserStore(db *sql.DB) datastore.UserStore {
 	}
 }
 
-func (us *UserStore) GetUser(ctx context.Context) error {
-	_, _ = us.db.QueryContext(ctx, "")
-	return nil
+func (us *UserStore) GetUser(ctx context.Context, u *datastore.User) (*datastore.User, error) {
+	sql := `SELECT "id", "email", "password" FROM "user" WHERE "deleted_at" IS NULL AND "verified" = true AND "email" = $1`
+	stmt, err := us.db.Prepare(sql)
+	if err != nil {
+		return nil, err
+	}
+
+	var user datastore.User
+	err = stmt.QueryRowContext(ctx, u.Email).Scan(&user.ID, &user.Email, &user.Password)
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
 }
 
-func (us *UserStore) AddNewUser(ctx context.Context, u *models.User, profile *models.Profile, pass *models.Password) error {
+func (us *UserStore) AddNewUser(ctx context.Context, u *datastore.User, profile *datastore.Profile, pass *datastore.Password) error {
 
 	sql := `INSERT INTO "user" (email, password) VALUES ($1, $2) RETURNING id`
 	stmt, err := us.db.Prepare(sql)
@@ -47,6 +56,6 @@ func (us *UserStore) AddNewUser(ctx context.Context, u *models.User, profile *mo
 	if err != nil {
 		return err
 	}
-	
+
 	return nil
 }

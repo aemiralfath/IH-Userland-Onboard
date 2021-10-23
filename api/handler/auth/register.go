@@ -10,7 +10,6 @@ import (
 
 	"github.com/aemiralfath/IH-Userland-Onboard/api/handler"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
-	"github.com/aemiralfath/IH-Userland-Onboard/datastore/models"
 	"github.com/go-chi/render"
 	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
@@ -41,25 +40,21 @@ func Register(userStore datastore.UserStore, profileStore datastore.ProfileStore
 		}
 
 		req.Password = string(hashPassword)
-		if err := userStore.AddNewUser(ctx, parseHandlerUser(req), parseHandlerProfile(req), parseHandlerPassword(req)); err != nil {
+		if err := userStore.AddNewUser(ctx, parseRegisterUser(req), parseRegisterProfile(req), parseRegisterPassword(req)); err != nil {
 			fmt.Println(render.Render(w, r, handler.InternalServerErrorRenderer(err)))
 			return
 		}
 
-		if err := sendEmailVerification(req.Email); err != nil {
-			fmt.Println(render.Render(w, r, handler.InternalServerErrorRenderer(err)))
-			return
-		}
+		go sendEmailVerification(req.Email)
 
-		if err := render.Render(w, r, handler.SuccesRenderer("Success")); err != nil {
+		if err := render.Render(w, r, handler.SuccesRenderer()); err != nil {
 			fmt.Println(render.Render(w, r, handler.InternalServerErrorRenderer(err)))
 			return
 		}
-		fmt.Println("Here!")
 	}
 }
 
-func sendEmailVerification(toEmail string) error {
+func sendEmailVerification(toEmail string) {
 	from := "criptdestroyer@gmail.com"
 	msg := []byte("To: " + toEmail + "\r\n" +
 		"From: " + from + "\r\n" +
@@ -69,33 +64,32 @@ func sendEmailVerification(toEmail string) error {
 
 	err := godotenv.Load(".env")
 	if err != nil {
-		return fmt.Errorf("Error loading .env file")
+		fmt.Println(fmt.Errorf("Error loading .env file"))
 	}
 
 	auth := smtp.PlainAuth("", from, os.Getenv("PASSWORD"), os.Getenv("SMTP_HOST"))
 	smtpAddress := fmt.Sprintf("%s:%v", os.Getenv("SMTP_HOST"), os.Getenv("SMTP_PORT"))
 	err = smtp.SendMail(smtpAddress, auth, from, []string{toEmail}, msg)
 	if err != nil {
-		return err
+		fmt.Println(fmt.Errorf(err.Error()))
 	}
-	return nil
 }
 
-func parseHandlerUser(u *registerRequest) *models.User {
-	return &models.User{
+func parseRegisterUser(u *registerRequest) *datastore.User {
+	return &datastore.User{
 		Email:    u.Email,
 		Password: u.Password,
 	}
 }
 
-func parseHandlerProfile(u *registerRequest) *models.Profile {
-	return &models.Profile{
+func parseRegisterProfile(u *registerRequest) *datastore.Profile {
+	return &datastore.Profile{
 		Fullname: u.Fullname,
 	}
 }
 
-func parseHandlerPassword(u *registerRequest) *models.Password {
-	return &models.Password{
+func parseRegisterPassword(u *registerRequest) *datastore.Password {
+	return &datastore.Password{
 		Password: u.Password,
 	}
 }

@@ -1,33 +1,51 @@
 package handler
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/go-chi/render"
 )
 
-type Response struct {
+type ErrorResponse struct {
 	Err        error  `json:"-"`
 	StatusCode int    `json:"code"`
 	Message    string `json:"message"`
 }
 
-func (rs *Response) Render(w http.ResponseWriter, r *http.Request) error {
+type SuccessResponse struct {
+	Success    bool `json:"success"`
+	StatusCode int  `json:"-"`
+}
+
+func CustomRender(w http.ResponseWriter, statusCode int, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	content, _ := json.Marshal(data)
+	_, _ = w.Write(content)
+}
+
+func (rs *ErrorResponse) Render(w http.ResponseWriter, r *http.Request) error {
+	render.Status(r, rs.StatusCode)
+	return nil
+}
+
+func (rs *SuccessResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	render.Status(r, rs.StatusCode)
 	return nil
 }
 
 // Success response with (optional) body.
-func SuccesRenderer(message string) *Response {
-	return &Response{
+func SuccesRenderer() *SuccessResponse {
+	return &SuccessResponse{
 		StatusCode: 200,
-		Message:    message,
+		Success:    true,
 	}
 }
 
 // HTTP status code if server cannot parse request body or query params. It possibly caused by mismatch data type
-func BadRequestErrorRenderer(err error) *Response {
-	return &Response{
+func BadRequestErrorRenderer(err error) *ErrorResponse {
+	return &ErrorResponse{
 		Err:        err,
 		StatusCode: 400,
 		Message:    err.Error(),
@@ -35,8 +53,8 @@ func BadRequestErrorRenderer(err error) *Response {
 }
 
 // HTTP status code for request without authorization or expired token
-func UnauthorizedErrorRenderer(err error) *Response {
-	return &Response{
+func UnauthorizedErrorRenderer(err error) *ErrorResponse {
+	return &ErrorResponse{
 		Err:        err,
 		StatusCode: 401,
 		Message:    err.Error(),
@@ -44,8 +62,8 @@ func UnauthorizedErrorRenderer(err error) *Response {
 }
 
 // HTTP status code if request sent with authorized token but trying to access to a resource outside its scope.
-func ForbiddenErrorRenderer(err error) *Response {
-	return &Response{
+func ForbiddenErrorRenderer(err error) *ErrorResponse {
+	return &ErrorResponse{
 		Err:        err,
 		StatusCode: 403,
 		Message:    err.Error(),
@@ -53,8 +71,8 @@ func ForbiddenErrorRenderer(err error) *Response {
 }
 
 // Special HTTP status code for input validation error
-func UnprocessableErrorRenderer(err error) *Response {
-	return &Response{
+func UnprocessableErrorRenderer(err error) *ErrorResponse {
+	return &ErrorResponse{
 		Err:        err,
 		StatusCode: 403,
 		Message:    err.Error(),
@@ -62,8 +80,8 @@ func UnprocessableErrorRenderer(err error) *Response {
 }
 
 // Server cannot handle internal error and will not return actual internal error message.
-func InternalServerErrorRenderer(err error) *Response {
-	return &Response{
+func InternalServerErrorRenderer(err error) *ErrorResponse {
+	return &ErrorResponse{
 		Err:        err,
 		StatusCode: 500,
 		Message:    err.Error(),

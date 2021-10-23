@@ -9,8 +9,6 @@ import (
 
 func Verification(authStore datastore.UserStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		_ = authStore.GetUser(ctx)
 		success := struct {
 			Success bool `json:"success"`
 		}{Success: true}
