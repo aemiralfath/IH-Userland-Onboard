@@ -22,8 +22,7 @@ func NewOTPStore(redis *redis.Client) datastore.OTPStore {
 func (s *OTPStore) GetOTP(ctx context.Context, email string, otp string) (string, error) {
 	key := fmt.Sprintf("otp:%s", email)
 
-	err := s.redis.Set(ctx, key, otp, time.Duration(time.Hour*1))
-	if err.Err() != nil {
+	if err := s.redis.Set(ctx, key, otp, time.Duration(time.Hour*1)); err.Err() != nil {
 		return "", err.Err()
 	}
 
@@ -32,5 +31,10 @@ func (s *OTPStore) GetOTP(ctx context.Context, email string, otp string) (string
 		return "", res.Err()
 	}
 
-	return res.String(), nil
+	token, err := res.Result()
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
 }

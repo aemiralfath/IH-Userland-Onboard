@@ -27,9 +27,9 @@ func main() {
 	}
 
 	redisCfg := datastore.RedisConfig{
-		Address: "redis_userland:6379",
+		Address:  "redis_userland:6379",
 		Password: "",
-		DB: 0,
+		DB:       0,
 	}
 
 	postgresDB, err := datastore.NewPG(postgresCfg)
@@ -46,7 +46,7 @@ func main() {
 
 	serverDataSource := &api.DataSource{
 		PostgresDB: postgresDB,
-		RedisDB: redisDB,
+		RedisDB:    redisDB,
 	}
 
 	srv := api.NewServer(serverCfg, serverDataSource)

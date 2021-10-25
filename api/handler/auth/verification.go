@@ -25,7 +25,13 @@ func Verification(otp datastore.OTPStore) http.HandlerFunc {
 			render.Render(w, r, helper.BadRequestErrorRenderer(err))
 		}
 
-		otp, err := otp.GetOTP(ctx, req.Recipient, "123456") // make generate toke later
+		token, err := helper.GenerateOTP(6)
+		if err != nil {
+			render.Render(w, r, helper.InternalServerErrorRenderer(err))
+			return
+		}
+
+		otp, err := otp.GetOTP(ctx, req.Recipient, token)
 		if err != nil {
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
@@ -47,4 +53,4 @@ func (verification *verificationRequest) Bind(r *http.Request) error {
 	return nil
 }
 
-func (verification *verificationRequest) Render(w http.ResponseWriter, r *http.Request){}
+func (verification *verificationRequest) Render(w http.ResponseWriter, r *http.Request) {}

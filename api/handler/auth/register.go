@@ -42,7 +42,13 @@ func Register(userStore datastore.UserStore, profileStore datastore.ProfileStore
 			return
 		}
 
-		otp, err := otp.GetOTP(ctx, req.Email, "123456") // make generate toke later
+		token, err := helper.GenerateOTP(6)
+		if err != nil {
+			render.Render(w, r, helper.InternalServerErrorRenderer(err))
+			return
+		}
+
+		otp, err := otp.GetOTP(ctx, req.Email, token)
 		if err != nil {
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
@@ -56,8 +62,6 @@ func Register(userStore datastore.UserStore, profileStore datastore.ProfileStore
 		}
 	}
 }
-
-
 
 func parseRegisterUser(u *registerRequest) *datastore.User {
 	return &datastore.User{
