@@ -38,3 +38,23 @@ func (s *OTPStore) GetOTP(ctx context.Context, email string, otp string) (string
 
 	return token, nil
 }
+
+func (s *OTPStore) GetTokenPassword(ctx context.Context, email string, otp string) (string, error) {
+	key := fmt.Sprintf("token:%s", email)
+
+	if err := s.redis.Set(ctx, key, otp, time.Duration(time.Minute*5)); err.Err() != nil {
+		return "", err.Err()
+	}
+
+	res := s.redis.Get(ctx, key)
+	if res.Err() != nil {
+		return "", res.Err()
+	}
+
+	token, err := res.Result()
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
+}

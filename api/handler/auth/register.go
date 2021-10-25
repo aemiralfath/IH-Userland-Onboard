@@ -48,13 +48,16 @@ func Register(userStore datastore.UserStore, profileStore datastore.ProfileStore
 			return
 		}
 
-		otp, err := otp.GetOTP(ctx, req.Email, token)
+		res, err := otp.GetOTP(ctx, req.Email, token)
 		if err != nil {
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
-		go helper.SendEmailVerification(req.Email, otp)
+		subject := "Userland Email Verification!"
+		msg := fmt.Sprintf("Use this otp for verify your email: %s", res)
+
+		go helper.SendEmail(req.Email, subject, msg)
 
 		if err := render.Render(w, r, helper.SuccesRenderer()); err != nil {
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))

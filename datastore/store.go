@@ -47,5 +47,6 @@ type PasswordStore interface {
 }
 
 type OTPStore interface {
-	GetOTP(ctx context.Context, id string, otp string) (string, error)
+	GetOTP(ctx context.Context, email string, otp string) (string, error)
+	GetTokenPassword(ctx context.Context, email string, token string) (string, error)
 }

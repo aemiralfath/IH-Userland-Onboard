@@ -31,13 +31,16 @@ func Verification(otp datastore.OTPStore) http.HandlerFunc {
 			return
 		}
 
-		otp, err := otp.GetOTP(ctx, req.Recipient, token)
+		res, err := otp.GetOTP(ctx, req.Recipient, token)
 		if err != nil {
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
-		go helper.SendEmailVerification(req.Recipient, otp)
+		subject := "Userland Email Verification!"
+		msg := fmt.Sprintf("Use this otp for verify your email: %s", res)
+
+		go helper.SendEmail(req.Recipient, subject, msg)
 
 		if err := render.Render(w, r, helper.SuccesRenderer()); err != nil {
 			fmt.Println(render.Render(w, r, helper.InternalServerErrorRenderer(err)))

@@ -28,7 +28,7 @@ func Login(jwtAuth helper.JWTAuth, userStore datastore.UserStore) http.HandlerFu
 			return
 		}
 
-		usr, err := userStore.GetUser(ctx, parseLoginUser(req))
+		usr, err := userStore.GetUser(ctx, parseLoginRequest(req))
 		if usr == nil {
 			render.Render(w, r, helper.BadRequestErrorRenderer(err))
 			return
@@ -38,8 +38,6 @@ func Login(jwtAuth helper.JWTAuth, userStore datastore.UserStore) http.HandlerFu
 			fmt.Println(render.Render(w, r, helper.InternalServerErrorRenderer(err)))
 			return
 		}
-
-		fmt.Printf("%d %s %s\n", usr.ID, usr.Email, usr.Password)
 
 		if err := confirmPassword(usr.Password, req.Password); err != nil {
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
@@ -80,7 +78,7 @@ func Login(jwtAuth helper.JWTAuth, userStore datastore.UserStore) http.HandlerFu
 	}
 }
 
-func parseLoginUser(u *loginRequest) *datastore.User {
+func parseLoginRequest(u *loginRequest) *datastore.User {
 	return &datastore.User{
 		Email:    u.Email,
 		Password: u.Password,

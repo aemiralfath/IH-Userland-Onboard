@@ -102,7 +102,7 @@ func (s *Server) createHandlers() http.Handler {
 			r.Post("/login", auth.Login(*s.jwt.tokenAuth, s.stores.userStore))
 
 			r.Route("/password", func(r chi.Router) {
-				r.Post("/forgot", auth.ForgotPassword(s.stores.userStore))
+				r.Post("/forgot", auth.ForgotPassword(s.stores.userStore, s.stores.otpStore))
 				r.Post("/reset", auth.ResetPassword(s.stores.userStore))
 			})
 		})
