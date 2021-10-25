@@ -18,18 +18,17 @@ func NewUserStore(db *sql.DB) datastore.UserStore {
 	}
 }
 
-func (us *UserStore) GetUser(ctx context.Context, u *datastore.User) (*datastore.User, error) {
-	sql := `SELECT "id", "email", "password" FROM "user" WHERE "deleted_at" IS NULL AND "verified" = true AND "email" = $1`
-	stmt, err := us.db.Prepare(sql)
+func (s *UserStore) GetUserByEmail(ctx context.Context, email string) (*datastore.User, error) {
+	query := `SELECT "id", "email", "password" FROM "user" WHERE "deleted_at" IS NULL AND "verified" = true AND "email" = $1`
+	stmt, err := s.db.Prepare(query)
 	if err != nil {
 		return nil, err
 	}
 
 	var user datastore.User
-	err = stmt.QueryRowContext(ctx, u.Email).Scan(&user.ID, &user.Email, &user.Password)
-
+	err = stmt.QueryRowContext(ctx, email).Scan(&user.ID, &user.Email, &user.Password)
 	if err != nil {
-		if err.Error() == "sql: no rows in result set" {
+		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("User not found")
 		} else {
 			return nil, err
@@ -39,11 +38,11 @@ func (us *UserStore) GetUser(ctx context.Context, u *datastore.User) (*datastore
 	}
 }
 
-func (us *UserStore) AddNewUser(ctx context.Context, u *datastore.User) (int, error) {
-	var userId int
-	sql := `INSERT INTO "user" (email, password) VALUES ($1, $2) RETURNING id`
+func (us *UserStore) AddNewUser(ctx context.Context, u *datastore.User) (float64, error) {
+	var userId float64
+	query := `INSERT INTO "user" (email, password) VALUES ($1, $2) RETURNING id`
 
-	stmt, err := us.db.Prepare(sql)
+	stmt, err := us.db.Prepare(query)
 	if err != nil {
 		return 0, err
 	}
@@ -56,6 +55,17 @@ func (us *UserStore) AddNewUser(ctx context.Context, u *datastore.User) (int, er
 	return userId, nil
 }
 
-func (us *UserStore) ChangePassword(ctx context.Context, u *datastore.User) error {
+func (s *UserStore) ChangePassword(ctx context.Context, u *datastore.User) error {
+	query := `UPDATE "user" SET "password" = $1 WHERE "id" = $2`
+	stmt, err := s.db.Prepare(query)
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.ExecContext(ctx, u.Password, u.ID)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

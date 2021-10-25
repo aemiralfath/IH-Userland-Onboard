@@ -9,7 +9,6 @@ import (
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/go-chi/render"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type loginRequest struct {
@@ -28,19 +27,17 @@ func Login(jwtAuth helper.JWTAuth, userStore datastore.UserStore) http.HandlerFu
 			return
 		}
 
-		usr, err := userStore.GetUser(ctx, parseLoginRequest(req))
+		usr, err := userStore.GetUserByEmail(ctx, req.Email)
 		if usr == nil {
 			render.Render(w, r, helper.BadRequestErrorRenderer(err))
 			return
-		}
-
-		if err != nil {
+		} else if err != nil {
 			fmt.Println(render.Render(w, r, helper.InternalServerErrorRenderer(err)))
 			return
 		}
 
-		if err := confirmPassword(usr.Password, req.Password); err != nil {
-			render.Render(w, r, helper.InternalServerErrorRenderer(err))
+		if err := helper.ConfirmPassword(usr.Password, req.Password); err != nil {
+			render.Render(w, r, helper.BadRequestErrorRenderer(err))
 			return
 		}
 
@@ -76,17 +73,6 @@ func Login(jwtAuth helper.JWTAuth, userStore datastore.UserStore) http.HandlerFu
 			},
 		})
 	}
-}
-
-func parseLoginRequest(u *loginRequest) *datastore.User {
-	return &datastore.User{
-		Email:    u.Email,
-		Password: u.Password,
-	}
-}
-
-func confirmPassword(hashedPassword, password string) error {
-	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 }
 
 func (login *loginRequest) Bind(r *http.Request) error {

@@ -20,17 +20,17 @@ func NewTokenStore(redis *redis.Client) datastore.TokenStore {
 }
 
 func (s *TokenStore) SetToken(ctx context.Context, tokenType, email, token string) error {
-	key := fmt.Sprintf("token:%s:%s", tokenType, email)
+	key := fmt.Sprintf("token:%s:%s", tokenType, token)
 
-	if err := s.redis.Set(ctx, key, token, time.Duration(time.Minute*5)); err.Err() != nil {
+	if err := s.redis.Set(ctx, key, email, time.Duration(time.Minute*5)); err.Err() != nil {
 		return err.Err()
 	}
 
 	return nil
 }
 
-func (s *TokenStore) GetToken(ctx context.Context, tokenType, email string) (string, error) {
-	key := fmt.Sprintf("token:%s:%s", tokenType, email)
+func (s *TokenStore) GetToken(ctx context.Context, tokenType, token string) (string, error) {
+	key := fmt.Sprintf("token:%s:%s", tokenType, token)
 
 	res := s.redis.Get(ctx, key)
 	if res.Err() != nil {

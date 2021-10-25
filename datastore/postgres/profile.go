@@ -34,7 +34,7 @@ func (s *ProfileStore) GetProfile(ctx context.Context, userId float64) (*datasto
 	return &prof, nil
 }
 
-func (s *ProfileStore) AddNewProfile(ctx context.Context, profile *datastore.Profile, userId int) error {
+func (s *ProfileStore) AddNewProfile(ctx context.Context, profile *datastore.Profile, userId float64) error {
 	sql := `INSERT INTO "profile" (user_id, fullname) VALUES ($1, $2)`
 	stmt, err := s.db.Prepare(sql)
 	if err != nil {

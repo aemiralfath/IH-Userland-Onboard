@@ -17,14 +17,14 @@ func NewPasswordStore(db *sql.DB) datastore.PasswordStore {
 	}
 }
 
-func (us *PasswordStore) GetPassword(ctx context.Context) error {
-	_, _ = us.db.QueryContext(ctx, "")
+func (s *PasswordStore) GetPassword(ctx context.Context) error {
+	_, _ = s.db.QueryContext(ctx, "")
 	return nil
 }
 
-func (s *PasswordStore) AddNewPassword(ctx context.Context, password *datastore.Password, userId int) error {
-	sql := `INSERT INTO "password" (user_id, password) VALUES ($1, $2)`
-	stmt, err := s.db.Prepare(sql)
+func (s *PasswordStore) AddNewPassword(ctx context.Context, password *datastore.Password, userId float64) error {
+	query := `INSERT INTO "password" (user_id, password) VALUES ($1, $2)`
+	stmt, err := s.db.Prepare(query)
 	if err != nil {
 		return err
 	}
@@ -35,4 +35,36 @@ func (s *PasswordStore) AddNewPassword(ctx context.Context, password *datastore.
 	}
 
 	return nil
+}
+
+func (s *PasswordStore) GetLastThreePassword(ctx context.Context, userId float64) ([]string, error) {
+	passwords := []string{}
+	query := `SELECT "password" FROM "password" WHERE "user_id" = $1 ORDER BY "created_at" DESC LIMIT 3`
+
+	stmt, err := s.db.Prepare(query)
+	if err != nil {
+		return passwords, err
+	}
+
+	res, err := stmt.QueryContext(ctx, userId)
+	if err != nil {
+		return passwords, err
+	}
+	defer res.Close()
+
+	for res.Next() {
+		var password string
+		err := res.Scan(&password)
+		if err != nil {
+			return passwords, err
+		}
+
+		passwords = append(passwords, password)
+	}
+
+	if err = res.Err(); err != nil {
+		return passwords, err
+	}
+
+	return passwords, nil
 }

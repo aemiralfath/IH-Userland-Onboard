@@ -25,7 +25,7 @@ func ForgotPassword(userStore datastore.UserStore, token datastore.TokenStore) h
 			return
 		}
 
-		usr, err := userStore.GetUser(ctx, parseForgotPasswordRequest(req))
+		usr, err := userStore.GetUserByEmail(ctx, req.Email)
 		if usr == nil {
 			render.Render(w, r, helper.BadRequestErrorRenderer(err))
 			return
@@ -56,12 +56,6 @@ func ForgotPassword(userStore datastore.UserStore, token datastore.TokenStore) h
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
-	}
-}
-
-func parseForgotPasswordRequest(p *forgotPasswordRequest) *datastore.User {
-	return &datastore.User{
-		Email: p.Email,
 	}
 }
 
