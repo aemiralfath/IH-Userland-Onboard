@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 )
@@ -26,11 +27,16 @@ func (us *UserStore) GetUser(ctx context.Context, u *datastore.User) (*datastore
 
 	var user datastore.User
 	err = stmt.QueryRowContext(ctx, u.Email).Scan(&user.ID, &user.Email, &user.Password)
-	if err != nil {
-		return nil, err
-	}
 
-	return &user, nil
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			return nil, fmt.Errorf("User not found")
+		} else {
+			return nil, err
+		}
+	} else {
+		return &user, nil
+	}
 }
 
 func (us *UserStore) AddNewUser(ctx context.Context, u *datastore.User, profile *datastore.Profile, pass *datastore.Password) error {

@@ -15,6 +15,7 @@ import (
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore/postgres"
+	"github.com/aemiralfath/IH-Userland-Onboard/datastore/redisdb"
 	"github.com/go-chi/chi"
 	"github.com/go-redis/redis/v8"
 )
@@ -36,6 +37,7 @@ type stores struct {
 	userStore     datastore.UserStore
 	profileStore  datastore.ProfileStore
 	passwordStore datastore.PasswordStore
+	otpStore      datastore.OTPStore
 }
 
 type jwtConfig struct {
@@ -60,10 +62,12 @@ func (s *Server) initStores() error {
 	userStore := postgres.NewUserStore(s.DataSource.PostgresDB)
 	profileStore := postgres.NewProfileStore(s.DataSource.PostgresDB)
 	passwordStore := postgres.NewPasswordStore(s.DataSource.PostgresDB)
+	otpStore := redisdb.NewOTPStore(s.DataSource.RedisDB)
 	s.stores = &stores{
 		userStore:     userStore,
 		profileStore:  profileStore,
 		passwordStore: passwordStore,
+		otpStore:      otpStore,
 	}
 	return nil
 }
@@ -93,8 +97,8 @@ func (s *Server) createHandlers() http.Handler {
 		})
 
 		r.Route("/auth", func(r chi.Router) {
-			r.Post("/register", auth.Register(s.stores.userStore, s.stores.profileStore, s.stores.passwordStore))
-			r.Post("/verification", auth.Verification(s.stores.userStore))
+			r.Post("/register", auth.Register(s.stores.userStore, s.stores.profileStore, s.stores.passwordStore, s.stores.otpStore))
+			r.Post("/verification", auth.Verification(s.stores.otpStore))
 			r.Post("/login", auth.Login(*s.jwt.tokenAuth, s.stores.userStore))
 
 			r.Route("/password", func(r chi.Router) {

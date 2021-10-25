@@ -3,15 +3,12 @@ package auth
 import (
 	"fmt"
 	"net/http"
-	"net/smtp"
-	"os"
 	"strings"
 	"unicode"
 
-	"github.com/aemiralfath/IH-Userland-Onboard/api/handler"
+	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/go-chi/render"
-	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -22,58 +19,45 @@ type registerRequest struct {
 	PasswordConfirm string `json:"password_confirm"`
 }
 
-func Register(userStore datastore.UserStore, profileStore datastore.ProfileStore, passwordStore datastore.PasswordStore) http.HandlerFunc {
+func Register(userStore datastore.UserStore, profileStore datastore.ProfileStore, passwordStore datastore.PasswordStore, otp datastore.OTPStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
 		req := &registerRequest{}
 
 		if err := render.Bind(r, req); err != nil {
-			fmt.Println(render.Render(w, r, handler.BadRequestErrorRenderer(err)))
+			render.Render(w, r, helper.BadRequestErrorRenderer(err))
 			return
 		}
 
 		hashPassword, err := hash(req.Password)
 		if err != nil {
-			fmt.Println(render.Render(w, r, handler.InternalServerErrorRenderer(err)))
+			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
 		req.Password = string(hashPassword)
 		if err := userStore.AddNewUser(ctx, parseRegisterUser(req), parseRegisterProfile(req), parseRegisterPassword(req)); err != nil {
-			fmt.Println(render.Render(w, r, handler.InternalServerErrorRenderer(err)))
+			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
-		go sendEmailVerification(req.Email)
+		otp, err := otp.GetOTP(ctx, req.Email, "123456") // make generate toke later
+		if err != nil {
+			render.Render(w, r, helper.InternalServerErrorRenderer(err))
+			return
+		}
 
-		if err := render.Render(w, r, handler.SuccesRenderer()); err != nil {
-			fmt.Println(render.Render(w, r, handler.InternalServerErrorRenderer(err)))
+		go helper.SendEmailVerification(req.Email, otp)
+
+		if err := render.Render(w, r, helper.SuccesRenderer()); err != nil {
+			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 	}
 }
 
-func sendEmailVerification(toEmail string) {
-	from := "criptdestroyer@gmail.com"
-	msg := []byte("To: " + toEmail + "\r\n" +
-		"From: " + from + "\r\n" +
-		"Subject: Userland Email Verification!\r\n" +
-		"\r\n" +
-		"This is the email is sent using golang and sendinblue.\r\n")
 
-	err := godotenv.Load(".env")
-	if err != nil {
-		fmt.Println(fmt.Errorf("Error loading .env file"))
-	}
-
-	auth := smtp.PlainAuth("", from, os.Getenv("PASSWORD"), os.Getenv("SMTP_HOST"))
-	smtpAddress := fmt.Sprintf("%s:%v", os.Getenv("SMTP_HOST"), os.Getenv("SMTP_PORT"))
-	err = smtp.SendMail(smtpAddress, auth, from, []string{toEmail}, msg)
-	if err != nil {
-		fmt.Println(fmt.Errorf(err.Error()))
-	}
-}
 
 func parseRegisterUser(u *registerRequest) *datastore.User {
 	return &datastore.User{
@@ -137,6 +121,4 @@ func (register *registerRequest) Bind(r *http.Request) error {
 	return nil
 }
 
-func (*registerRequest) Render(w http.ResponseWriter, r *http.Request) error {
-	return nil
-}
+func (*registerRequest) Render(w http.ResponseWriter, r *http.Request) {}

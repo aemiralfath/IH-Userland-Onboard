@@ -45,3 +45,7 @@ type UserStore interface {
 type PasswordStore interface {
 	GetPassword(ctx context.Context) error
 }
+
+type OTPStore interface {
+	GetOTP(ctx context.Context, id string, otp string) (string, error)
+}

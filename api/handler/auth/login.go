@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aemiralfath/IH-Userland-Onboard/api/handler"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/go-chi/render"
@@ -25,20 +24,25 @@ func Login(jwtAuth helper.JWTAuth, userStore datastore.UserStore) http.HandlerFu
 		req := &loginRequest{}
 
 		if err := render.Bind(r, req); err != nil {
-			fmt.Println(render.Render(w, r, handler.BadRequestErrorRenderer(err)))
+			render.Render(w, r, helper.BadRequestErrorRenderer(err))
 			return
 		}
 
 		usr, err := userStore.GetUser(ctx, parseLoginUser(req))
+		if usr == nil {
+			render.Render(w, r, helper.BadRequestErrorRenderer(err))
+			return
+		}
+
 		if err != nil {
-			fmt.Println(render.Render(w, r, handler.InternalServerErrorRenderer(err)))
+			fmt.Println(render.Render(w, r, helper.InternalServerErrorRenderer(err)))
 			return
 		}
 
 		fmt.Printf("%d %s %s\n", usr.ID, usr.Email, usr.Password)
 
 		if err := confirmPassword(usr.Password, req.Password); err != nil {
-			fmt.Println(render.Render(w, r, handler.InternalServerErrorRenderer(err)))
+			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
@@ -50,7 +54,7 @@ func Login(jwtAuth helper.JWTAuth, userStore datastore.UserStore) http.HandlerFu
 
 		_, accessToken, err := jwtAuth.Encode(accessTokenClaims)
 		if err != nil {
-			fmt.Println(render.Render(w, r, handler.InternalServerErrorRenderer(err)))
+			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
@@ -65,7 +69,7 @@ func Login(jwtAuth helper.JWTAuth, userStore datastore.UserStore) http.HandlerFu
 		// 	return
 		// }
 
-		handler.CustomRender(w, http.StatusOK, map[string]interface{}{
+		helper.CustomRender(w, http.StatusOK, map[string]interface{}{
 			"require_tfa": false,
 			"access_token": map[string]string{
 				"value":      accessToken,
@@ -99,6 +103,4 @@ func (login *loginRequest) Bind(r *http.Request) error {
 	return nil
 }
 
-func (*loginRequest) Render(w http.ResponseWriter, r *http.Request) error {
-	return nil
-}
+func (*loginRequest) Render(w http.ResponseWriter, r *http.Request) {}
