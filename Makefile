@@ -1,5 +1,5 @@
-postgresh:
-	docker exec -it ih-userland-onboard_postgres_1 /bin/sh
+redissh:
+	docker exec -it ih-userland-onboard_redis_1 /bin/sh
 
 createdb:
 	docker exec -it ih-userland-onboard_postgres_1 createdb --username=admin --owner=admin userland2

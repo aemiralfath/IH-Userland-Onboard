@@ -39,29 +39,23 @@ func (us *UserStore) GetUser(ctx context.Context, u *datastore.User) (*datastore
 	}
 }
 
-func (us *UserStore) AddNewUser(ctx context.Context, u *datastore.User, profile *datastore.Profile, pass *datastore.Password) error {
-
+func (us *UserStore) AddNewUser(ctx context.Context, u *datastore.User) (int, error) {
+	var userId int
 	sql := `INSERT INTO "user" (email, password) VALUES ($1, $2) RETURNING id`
+
 	stmt, err := us.db.Prepare(sql)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	var userId int
 	err = stmt.QueryRowContext(ctx, u.Email, u.Password).Scan(&userId)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	_, err = us.db.ExecContext(ctx, `INSERT INTO "profile" (user_id, fullname) VALUES ($1, $2)`, userId, profile.Fullname)
-	if err != nil {
-		return err
-	}
+	return userId, nil
+}
 
-	_, err = us.db.ExecContext(ctx, `INSERT INTO "password" (user_id, password) VALUES ($1, $2)`, userId, pass.Password)
-	if err != nil {
-		return err
-	}
-
+func (us *UserStore) ChangePassword(ctx context.Context, u *datastore.User) error {
 	return nil
 }

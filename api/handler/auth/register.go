@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"unicode"
 
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/go-chi/render"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type registerRequest struct {
@@ -19,7 +17,7 @@ type registerRequest struct {
 	PasswordConfirm string `json:"password_confirm"`
 }
 
-func Register(userStore datastore.UserStore, profileStore datastore.ProfileStore, passwordStore datastore.PasswordStore, otp datastore.OTPStore) http.HandlerFunc {
+func Register(userStore datastore.UserStore, profileStore datastore.ProfileStore, passwordStore datastore.PasswordStore, token datastore.TokenStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
@@ -30,32 +28,42 @@ func Register(userStore datastore.UserStore, profileStore datastore.ProfileStore
 			return
 		}
 
-		hashPassword, err := hash(req.Password)
+		hashPassword, err := helper.HashPassword(req.Password)
 		if err != nil {
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
 		req.Password = string(hashPassword)
-		if err := userStore.AddNewUser(ctx, parseRegisterUser(req), parseRegisterProfile(req), parseRegisterPassword(req)); err != nil {
-			render.Render(w, r, helper.InternalServerErrorRenderer(err))
-			return
-		}
-
-		token, err := helper.GenerateOTP(6)
+		userId, err := userStore.AddNewUser(ctx, parseRegisterRequestUser(req))
 		if err != nil {
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
-		res, err := otp.GetOTP(ctx, req.Email, token)
+		if err := profileStore.AddNewProfile(ctx, parseRegisterRequestProfile(req), userId); err != nil {
+			render.Render(w, r, helper.InternalServerErrorRenderer(err))
+			return
+		}
+
+		if err := passwordStore.AddNewPassword(ctx, parseRegisterRequestPassword(req), userId); err != nil {
+			render.Render(w, r, helper.InternalServerErrorRenderer(err))
+			return
+		}
+
+		tokenCode, err := helper.GenerateOTP(6)
 		if err != nil {
+			render.Render(w, r, helper.InternalServerErrorRenderer(err))
+			return
+		}
+
+		if err := token.SetToken(ctx, "user", req.Email, tokenCode); err != nil {
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
 		subject := "Userland Email Verification!"
-		msg := fmt.Sprintf("Use this otp for verify your email: %s", res)
+		msg := fmt.Sprintf("Use this otp for verify your email: %s", tokenCode)
 
 		go helper.SendEmail(req.Email, subject, msg)
 
@@ -66,45 +74,23 @@ func Register(userStore datastore.UserStore, profileStore datastore.ProfileStore
 	}
 }
 
-func parseRegisterUser(u *registerRequest) *datastore.User {
+func parseRegisterRequestUser(u *registerRequest) *datastore.User {
 	return &datastore.User{
 		Email:    u.Email,
 		Password: u.Password,
 	}
 }
 
-func parseRegisterProfile(u *registerRequest) *datastore.Profile {
+func parseRegisterRequestProfile(u *registerRequest) *datastore.Profile {
 	return &datastore.Profile{
 		Fullname: u.Fullname,
 	}
 }
 
-func parseRegisterPassword(u *registerRequest) *datastore.Password {
+func parseRegisterRequestPassword(u *registerRequest) *datastore.Password {
 	return &datastore.Password{
 		Password: u.Password,
 	}
-}
-
-func hash(password string) ([]byte, error) {
-	return bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-}
-
-func verifyPassword(s string) (eightOrMore, number, upper bool) {
-	letters := 0
-	for _, c := range s {
-		switch {
-		case unicode.IsNumber(c):
-			number = true
-			letters++
-		case unicode.IsUpper(c):
-			upper = true
-			letters++
-		case unicode.IsLetter(c) || c == ' ':
-			letters++
-		}
-	}
-	eightOrMore = letters >= 8
-	return
 }
 
 func (register *registerRequest) Bind(r *http.Request) error {
@@ -120,7 +106,7 @@ func (register *registerRequest) Bind(r *http.Request) error {
 		return fmt.Errorf("password and confirm password must same!")
 	}
 
-	passLength, number, upper := verifyPassword(register.Password)
+	passLength, number, upper := helper.VerifyPassword(register.Password)
 	if !passLength || !number || !upper {
 		return fmt.Errorf("password must have lowercase, uppercase, number, and minimum 8 chars!")
 	}

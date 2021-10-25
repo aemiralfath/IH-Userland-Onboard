@@ -35,18 +35,21 @@ type Password struct {
 
 type ProfileStore interface {
 	GetProfile(ctx context.Context, userId float64) (*Profile, error)
+	AddNewProfile(ctx context.Context, profli *Profile, userId int) error
 }
 
 type UserStore interface {
 	GetUser(ctx context.Context, user *User) (*User, error)
-	AddNewUser(ctx context.Context, user *User, profile *Profile, password *Password) error
+	AddNewUser(ctx context.Context, user *User) (int, error)
+	ChangePassword(ctx context.Context, user *User) error
 }
 
 type PasswordStore interface {
 	GetPassword(ctx context.Context) error
+	AddNewPassword(ctx context.Context, password *Password, userId int) error
 }
 
-type OTPStore interface {
-	GetOTP(ctx context.Context, email string, otp string) (string, error)
-	GetTokenPassword(ctx context.Context, email string, token string) (string, error)
+type TokenStore interface {
+	SetToken(ctx context.Context, tokenType, email, token string) error
+	GetToken(ctx context.Context, tokenType, email string) (string, error)
 }

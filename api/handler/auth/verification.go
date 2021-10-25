@@ -15,7 +15,7 @@ type verificationRequest struct {
 	Recipient string `json:"recipient"`
 }
 
-func Verification(otp datastore.OTPStore) http.HandlerFunc {
+func Verification(token datastore.TokenStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
@@ -25,20 +25,19 @@ func Verification(otp datastore.OTPStore) http.HandlerFunc {
 			render.Render(w, r, helper.BadRequestErrorRenderer(err))
 		}
 
-		token, err := helper.GenerateOTP(6)
+		tokenCode, err := helper.GenerateOTP(6)
 		if err != nil {
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
-		res, err := otp.GetOTP(ctx, req.Recipient, token)
-		if err != nil {
+		if err := token.SetToken(ctx, "user", req.Recipient, tokenCode); err != nil {
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
 		subject := "Userland Email Verification!"
-		msg := fmt.Sprintf("Use this otp for verify your email: %s", res)
+		msg := fmt.Sprintf("Use this otp for verify your email: %s", tokenCode)
 
 		go helper.SendEmail(req.Recipient, subject, msg)
 

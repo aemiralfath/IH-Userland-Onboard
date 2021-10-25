@@ -14,7 +14,7 @@ type forgotPasswordRequest struct {
 	Email string `json:"Email"`
 }
 
-func ForgotPassword(userStore datastore.UserStore, otp datastore.OTPStore) http.HandlerFunc {
+func ForgotPassword(userStore datastore.UserStore, token datastore.TokenStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
@@ -36,20 +36,19 @@ func ForgotPassword(userStore datastore.UserStore, otp datastore.OTPStore) http.
 			return
 		}
 
-		token, err := helper.GenerateOTP(9)
+		tokenCode, err := helper.GenerateOTP(6)
 		if err != nil {
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
-		res, err := otp.GetTokenPassword(ctx, req.Email, token)
-		if err != nil {
+		if err := token.SetToken(ctx, "password", req.Email, tokenCode); err != nil {
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
 		subject := "Userland Reset Password!"
-		msg := fmt.Sprintf("Use this token for reset your password: %s", res)
+		msg := fmt.Sprintf("Use this token for reset your password: %s", tokenCode)
 
 		go helper.SendEmail(req.Email, subject, msg)
 
@@ -60,9 +59,9 @@ func ForgotPassword(userStore datastore.UserStore, otp datastore.OTPStore) http.
 	}
 }
 
-func parseForgotPasswordRequest(u *forgotPasswordRequest) *datastore.User {
+func parseForgotPasswordRequest(p *forgotPasswordRequest) *datastore.User {
 	return &datastore.User{
-		Email: u.Email,
+		Email: p.Email,
 	}
 }
 

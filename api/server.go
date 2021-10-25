@@ -37,7 +37,7 @@ type stores struct {
 	userStore     datastore.UserStore
 	profileStore  datastore.ProfileStore
 	passwordStore datastore.PasswordStore
-	otpStore      datastore.OTPStore
+	otpStore      datastore.TokenStore
 }
 
 type jwtConfig struct {
@@ -62,7 +62,7 @@ func (s *Server) initStores() error {
 	userStore := postgres.NewUserStore(s.DataSource.PostgresDB)
 	profileStore := postgres.NewProfileStore(s.DataSource.PostgresDB)
 	passwordStore := postgres.NewPasswordStore(s.DataSource.PostgresDB)
-	otpStore := redisdb.NewOTPStore(s.DataSource.RedisDB)
+	otpStore := redisdb.NewTokenStore(s.DataSource.RedisDB)
 	s.stores = &stores{
 		userStore:     userStore,
 		profileStore:  profileStore,
@@ -103,7 +103,7 @@ func (s *Server) createHandlers() http.Handler {
 
 			r.Route("/password", func(r chi.Router) {
 				r.Post("/forgot", auth.ForgotPassword(s.stores.userStore, s.stores.otpStore))
-				r.Post("/reset", auth.ResetPassword(s.stores.userStore))
+				r.Post("/reset", auth.ResetPassword(s.stores.userStore, s.stores.passwordStore, s.stores.otpStore))
 			})
 		})
 	})
