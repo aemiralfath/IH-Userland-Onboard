@@ -95,6 +95,7 @@ func (s *Server) createHandlers() http.Handler {
 			r.Post("/email", me.ChangeEmail(*s.jwt.tokenAuth, s.stores.userStore, s.stores.tokenStore))
 			r.Post("/password", me.ChangePassword(*s.jwt.tokenAuth, s.stores.userStore, s.stores.passwordStore))
 			r.Post("/picture", me.SetPicture(*s.jwt.tokenAuth, s.stores.profileStore))
+			r.Delete("/picture", me.DeletePicture(*s.jwt.tokenAuth, s.stores.profileStore))
 		})
 
 	})
