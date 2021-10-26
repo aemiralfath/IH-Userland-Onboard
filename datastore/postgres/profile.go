@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 )
@@ -19,9 +20,9 @@ func NewProfileStore(db *sql.DB) datastore.ProfileStore {
 
 func (s *ProfileStore) GetProfile(ctx context.Context, userId float64) (*datastore.Profile, error) {
 	var prof datastore.Profile
-	sql := `SELECT * FROM "profile" WHERE "user_id" = $1`
+	query := `SELECT * FROM "profile" WHERE "user_id" = $1`
 
-	stmt, err := s.db.Prepare(sql)
+	stmt, err := s.db.Prepare(query)
 	if err != nil {
 		return nil, err
 	}
@@ -35,13 +36,28 @@ func (s *ProfileStore) GetProfile(ctx context.Context, userId float64) (*datasto
 }
 
 func (s *ProfileStore) AddNewProfile(ctx context.Context, profile *datastore.Profile, userId float64) error {
-	sql := `INSERT INTO "profile" (user_id, fullname) VALUES ($1, $2)`
-	stmt, err := s.db.Prepare(sql)
+	query := `INSERT INTO "profile" (user_id, fullname) VALUES ($1, $2)`
+	stmt, err := s.db.Prepare(query)
 	if err != nil {
 		return err
 	}
 
 	_, err = stmt.ExecContext(ctx, userId, profile.Fullname)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *ProfileStore) UpdateProfile(ctx context.Context, profile *datastore.Profile, userId float64) error {
+	query := `UPDATE "profile" SET "fullname" = $1, "location" = $2, "bio" = $3, "web" = $4, "updated_at" = $5 WHERE "user_id" = $6`
+	stmt, err := s.db.Prepare(query)
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.ExecContext(ctx, profile.Fullname, profile.Location, profile.Bio, profile.Web, time.Now().Format(time.RFC3339), userId)
 	if err != nil {
 		return err
 	}

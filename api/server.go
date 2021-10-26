@@ -88,7 +88,11 @@ func (s *Server) createHandlers() http.Handler {
 	r.Group(func(r chi.Router) {
 		r.Use(helper.Verifier(s.jwt.tokenAuth))
 		r.Use(helper.Authenticator)
-		r.Get("/me", me.GetProfile(*s.jwt.tokenAuth, s.stores.profileStore))
+		r.Route("/me", func(r chi.Router) {
+			r.Get("/", me.GetProfile(*s.jwt.tokenAuth, s.stores.profileStore))
+			r.Post("/", me.UpdateProfile(*s.jwt.tokenAuth, s.stores.profileStore))
+		})
+		
 	})
 
 	r.Group(func(r chi.Router) {

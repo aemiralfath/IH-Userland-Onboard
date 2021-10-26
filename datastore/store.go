@@ -35,7 +35,8 @@ type Password struct {
 
 type ProfileStore interface {
 	GetProfile(ctx context.Context, userId float64) (*Profile, error)
-	AddNewProfile(ctx context.Context, profli *Profile, userId float64) error
+	AddNewProfile(ctx context.Context, profile *Profile, userId float64) error
+	UpdateProfile(ctx context.Context, profile *Profile, userId float64) error
 }
 
 type UserStore interface {
