@@ -46,6 +46,7 @@ type UserStore interface {
 	AddNewUser(ctx context.Context, user *User) (float64, error)
 	ChangePassword(ctx context.Context, user *User) error
 	CheckUserEmailExist(ctx context.Context, email string) (*User, error)
+	SafeDeleteUser(ctx context.Context, email string) error
 }
 
 type PasswordStore interface {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 )
@@ -108,4 +109,19 @@ func (s *UserStore) CheckUserEmailExist(ctx context.Context, email string) (*dat
 	} else {
 		return &user, nil
 	}
+}
+
+func (s *UserStore) SafeDeleteUser(ctx context.Context, email string) error {
+	query := `UPDATE "user" SET "deleted_at" = $1 WHERE "email" = $2`
+	stmt, err := s.db.Prepare(query)
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.ExecContext(ctx, time.Now().Format(time.RFC3339), email)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
