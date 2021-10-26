@@ -37,7 +37,7 @@ type stores struct {
 	userStore     datastore.UserStore
 	profileStore  datastore.ProfileStore
 	passwordStore datastore.PasswordStore
-	otpStore      datastore.TokenStore
+	tokenStore    datastore.TokenStore
 }
 
 type jwtConfig struct {
@@ -62,12 +62,12 @@ func (s *Server) initStores() error {
 	userStore := postgres.NewUserStore(s.DataSource.PostgresDB)
 	profileStore := postgres.NewProfileStore(s.DataSource.PostgresDB)
 	passwordStore := postgres.NewPasswordStore(s.DataSource.PostgresDB)
-	otpStore := redisdb.NewTokenStore(s.DataSource.RedisDB)
+	tokenStore := redisdb.NewTokenStore(s.DataSource.RedisDB)
 	s.stores = &stores{
 		userStore:     userStore,
 		profileStore:  profileStore,
 		passwordStore: passwordStore,
-		otpStore:      otpStore,
+		tokenStore:    tokenStore,
 	}
 	return nil
 }
@@ -92,8 +92,9 @@ func (s *Server) createHandlers() http.Handler {
 			r.Get("/", me.GetProfile(*s.jwt.tokenAuth, s.stores.profileStore))
 			r.Post("/", me.UpdateProfile(*s.jwt.tokenAuth, s.stores.profileStore))
 			r.Get("/email", me.GetEmail(*s.jwt.tokenAuth, s.stores.userStore))
+			r.Post("/email", me.ChangeEmail(*s.jwt.tokenAuth, s.stores.userStore, s.stores.tokenStore))
 		})
-		
+
 	})
 
 	r.Group(func(r chi.Router) {
@@ -102,13 +103,13 @@ func (s *Server) createHandlers() http.Handler {
 		})
 
 		r.Route("/auth", func(r chi.Router) {
-			r.Post("/register", auth.Register(s.stores.userStore, s.stores.profileStore, s.stores.passwordStore, s.stores.otpStore))
-			r.Post("/verification", auth.Verification(s.stores.otpStore))
+			r.Post("/register", auth.Register(s.stores.userStore, s.stores.profileStore, s.stores.passwordStore, s.stores.tokenStore))
+			r.Post("/verification", auth.Verification(s.stores.tokenStore, s.stores.userStore))
 			r.Post("/login", auth.Login(*s.jwt.tokenAuth, s.stores.userStore))
 
 			r.Route("/password", func(r chi.Router) {
-				r.Post("/forgot", auth.ForgotPassword(s.stores.userStore, s.stores.otpStore))
-				r.Post("/reset", auth.ResetPassword(s.stores.userStore, s.stores.passwordStore, s.stores.otpStore))
+				r.Post("/forgot", auth.ForgotPassword(s.stores.userStore, s.stores.tokenStore))
+				r.Post("/reset", auth.ResetPassword(s.stores.userStore, s.stores.passwordStore, s.stores.tokenStore))
 			})
 		})
 	})

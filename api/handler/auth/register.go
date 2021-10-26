@@ -28,15 +28,15 @@ func Register(userStore datastore.UserStore, profileStore datastore.ProfileStore
 			return
 		}
 
-		hashPassword, err := helper.HashPassword(req.Password)
-		if err != nil {
-			render.Render(w, r, helper.InternalServerErrorRenderer(err))
+		usr, _ := userStore.CheckUserEmailExist(ctx, req.Email)
+		if usr != nil {
+			render.Render(w, r, helper.BadRequestErrorRenderer(fmt.Errorf("Email already exist!")))
 			return
 		}
 
-		usr, _ := userStore.GetUserByEmail(ctx, req.Email)
-		if usr != nil {
-			render.Render(w, r, helper.BadRequestErrorRenderer(fmt.Errorf("Email already exist!")))
+		hashPassword, err := helper.HashPassword(req.Password)
+		if err != nil {
+			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
@@ -63,7 +63,8 @@ func Register(userStore datastore.UserStore, profileStore datastore.ProfileStore
 			return
 		}
 
-		if err := token.SetToken(ctx, "user", req.Email, tokenCode); err != nil {
+		value := fmt.Sprintf("%f-%s", userId, req.Email)
+		if err := token.SetToken(ctx, "user", value, tokenCode); err != nil {
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}

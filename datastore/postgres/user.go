@@ -89,3 +89,23 @@ func (s *UserStore) GetEmailByID(ctx context.Context, userId float64) (string, e
 		return email, nil
 	}
 }
+
+func (s *UserStore) CheckUserEmailExist(ctx context.Context, email string) (*datastore.User, error) {
+	query := `SELECT "id", "email" FROM "user" WHERE "deleted_at" IS NULL AND "email" = $1`
+	stmt, err := s.db.Prepare(query)
+	if err != nil {
+		return nil, err
+	}
+
+	var user datastore.User
+	err = stmt.QueryRowContext(ctx, email).Scan(&user.ID, &user.Email)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("User not found")
+		} else {
+			return nil, err
+		}
+	} else {
+		return &user, nil
+	}
+}

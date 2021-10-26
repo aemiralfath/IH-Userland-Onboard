@@ -15,7 +15,7 @@ type verificationRequest struct {
 	Recipient string `json:"recipient"`
 }
 
-func Verification(token datastore.TokenStore) http.HandlerFunc {
+func Verification(token datastore.TokenStore, userStore datastore.UserStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
@@ -25,13 +25,20 @@ func Verification(token datastore.TokenStore) http.HandlerFunc {
 			render.Render(w, r, helper.BadRequestErrorRenderer(err))
 		}
 
+		usr, err := userStore.CheckUserEmailExist(ctx, req.Recipient)
+		if err != nil {
+			render.Render(w, r, helper.BadRequestErrorRenderer(err))
+			return
+		}
+
 		tokenCode, err := helper.GenerateOTP(6)
 		if err != nil {
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
-		if err := token.SetToken(ctx, "user", req.Recipient, tokenCode); err != nil {
+		value := fmt.Sprintf("%f-%s", usr.ID, req.Recipient)
+		if err := token.SetToken(ctx, "user", value, tokenCode); err != nil {
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
