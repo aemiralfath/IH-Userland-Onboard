@@ -93,6 +93,7 @@ func (s *Server) createHandlers() http.Handler {
 			r.Post("/", me.UpdateProfile(*s.jwt.tokenAuth, s.stores.profileStore))
 			r.Get("/email", me.GetEmail(*s.jwt.tokenAuth, s.stores.userStore))
 			r.Post("/email", me.ChangeEmail(*s.jwt.tokenAuth, s.stores.userStore, s.stores.tokenStore))
+			r.Post("/password", me.ChangePassword(*s.jwt.tokenAuth, s.stores.userStore, s.stores.passwordStore))
 		})
 
 	})
