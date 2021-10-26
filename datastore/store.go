@@ -40,6 +40,7 @@ type ProfileStore interface {
 }
 
 type UserStore interface {
+	GetEmailByID(ctx context.Context, id float64) (string, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	AddNewUser(ctx context.Context, user *User) (float64, error)
 	ChangePassword(ctx context.Context, user *User) error

@@ -91,6 +91,7 @@ func (s *Server) createHandlers() http.Handler {
 		r.Route("/me", func(r chi.Router) {
 			r.Get("/", me.GetProfile(*s.jwt.tokenAuth, s.stores.profileStore))
 			r.Post("/", me.UpdateProfile(*s.jwt.tokenAuth, s.stores.profileStore))
+			r.Get("/email", me.GetEmail(*s.jwt.tokenAuth, s.stores.userStore))
 		})
 		
 	})

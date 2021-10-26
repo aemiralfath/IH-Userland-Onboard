@@ -69,3 +69,23 @@ func (s *UserStore) ChangePassword(ctx context.Context, u *datastore.User) error
 
 	return nil
 }
+
+func (s *UserStore) GetEmailByID(ctx context.Context, userId float64) (string, error) {
+	query := `SELECT "email" FROM "user" WHERE "deleted_at" IS NULL AND "verified" = true AND "id" = $1`
+	stmt, err := s.db.Prepare(query)
+	if err != nil {
+		return "", err
+	}
+
+	var email string
+	err = stmt.QueryRowContext(ctx, userId).Scan(&email)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", fmt.Errorf("User not found")
+		} else {
+			return "", err
+		}
+	} else {
+		return email, nil
+	}
+}
