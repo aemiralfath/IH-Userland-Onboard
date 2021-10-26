@@ -19,7 +19,7 @@ Userland is account self-management system for Ice House Onboarding Project
 ```sql
 CREATE TABLE IF NOT EXISTS "user" (
   "id" BIGSERIAL PRIMARY KEY,
-  "email" VARCHAR(128) UNIQUE NOT NULL,
+  "email" VARCHAR(128) NOT NULL,
   "password" TEXT NOT NULL,
   "verified" BOOLEAN NOT NULL DEFAULT FALSE,
   "created_at" timestamptz NOT NULL DEFAULT (now()),

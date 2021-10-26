@@ -34,6 +34,12 @@ func Register(userStore datastore.UserStore, profileStore datastore.ProfileStore
 			return
 		}
 
+		usr, _ := userStore.GetUserByEmail(ctx, req.Email)
+		if usr != nil {
+			render.Render(w, r, helper.BadRequestErrorRenderer(fmt.Errorf("Email already exist!")))
+			return
+		}
+
 		req.Password = string(hashPassword)
 		userId, err := userStore.AddNewUser(ctx, parseRegisterRequestUser(req))
 		if err != nil {
