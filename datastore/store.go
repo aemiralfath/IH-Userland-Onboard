@@ -37,6 +37,7 @@ type ProfileStore interface {
 	GetProfile(ctx context.Context, userId float64) (*Profile, error)
 	AddNewProfile(ctx context.Context, profile *Profile, userId float64) error
 	UpdateProfile(ctx context.Context, profile *Profile, userId float64) error
+	UpdatePicture(ctx context.Context, profile *Profile, userId float64) error
 }
 
 type UserStore interface {

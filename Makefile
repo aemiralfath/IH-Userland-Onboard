@@ -1,3 +1,6 @@
+userlandsh:
+	docker exec -it ih-userland-onboard_userland_1 /bin/sh
+
 redissh:
 	docker exec -it ih-userland-onboard_redis_1 /bin/sh
 

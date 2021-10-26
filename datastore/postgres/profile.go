@@ -64,3 +64,18 @@ func (s *ProfileStore) UpdateProfile(ctx context.Context, profile *datastore.Pro
 
 	return nil
 }
+
+func (s *ProfileStore) UpdatePicture(ctx context.Context, profile *datastore.Profile, userId float64) error {
+	query := `UPDATE "profile" SET "picture" = $1 WHERE "user_id" = $2`
+	stmt, err := s.db.Prepare(query)
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.ExecContext(ctx, profile.Picture, userId)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
