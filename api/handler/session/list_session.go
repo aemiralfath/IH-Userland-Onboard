@@ -9,7 +9,7 @@ import (
 	"github.com/go-chi/render"
 )
 
-func GetListSession(jwtAuth helper.JWTAuth, sessionStore datastore.SessionStore, clientStore datastore.ClientStore, eventStore datastore.EventStore) http.HandlerFunc {
+func GetListSession(jwtAuth helper.JWTAuth, sessionStore datastore.SessionStore, clientStore datastore.ClientStore) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		_, claims, err := helper.FromContext(ctx)
@@ -19,5 +19,6 @@ func GetListSession(jwtAuth helper.JWTAuth, sessionStore datastore.SessionStore,
 		}
 
 		userId := claims["userID"]
+		fmt.Println(userId)
 	}
 }

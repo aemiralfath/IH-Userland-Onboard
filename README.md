@@ -56,6 +56,35 @@ ALTER TABLE "profile" ADD FOREIGN KEY ("user_id") REFERENCES "user" ("id");
 
 CREATE INDEX ON "profile" ("user_id");
 
+CREATE TABLE IF NOT EXISTS "client" (
+  "id" BIGSERIAL PRIMARY KEY,
+  "name" VARCHAR(128) NOT NULL
+);
+
+CREATE INDEX ON "client" ("id");
+
+CREATE INDEX ON "client" ("name");
+
+CREATE TABLE IF NOT EXISTS "session" (
+  "jti" VARCHAR(255)  PRIMARY KEY,
+  "user_id" BIGINT,
+  "client_id" BIGINT,
+  "is_current" BOOLEAN NOT NULL DEFAULT TRUE,
+  "event" VARCHAR(255),
+  "user_agent" TEXT,
+  "ip" TEXT,
+  "created_at" timestamptz NOT NULL DEFAULT (now()),
+  "updated_at" timestamptz NOT NULL DEFAULT (now())
+);
+
+ALTER TABLE "session" ADD FOREIGN KEY ("user_id") REFERENCES "user" ("id");
+
+ALTER TABLE "session" ADD FOREIGN KEY ("client_id") REFERENCES "client" ("id");
+
+CREATE INDEX ON "session" ("user_id");
+
+CREATE INDEX ON "session" ("client_id");
+
 CREATE TABLE IF NOT EXISTS "tfa" (
   "id" BIGSERIAL PRIMARY KEY,
   "user_id" BIGINT,
@@ -77,36 +106,6 @@ CREATE TABLE IF NOT EXISTS "tfa_code" (
 ALTER TABLE "tfa_code" ADD FOREIGN KEY ("tfa_id") REFERENCES "tfa" ("id");
 
 CREATE INDEX ON "tfa_code" ("tfa_id");
-
-CREATE TABLE IF NOT EXISTS "session" (
-  "jti" VARCHAR(255)  PRIMARY KEY,
-  "user_id" BIGINT,
-  "client_id" BIGINT,
-  "is_current" BOOLEAN NOT NULL DEFAULT TRUE
-  "event" VARCHAR(255),
-  "user_agent" TEXT,
-  "ip" TEXT,
-  "created_at" timestamptz NOT NULL DEFAULT (now()),
-  "updated_at" timestamptz NOT NULL DEFAULT (now())
-);
-
-ALTER TABLE "session" ADD FOREIGN KEY ("user_id") REFERENCES "user" ("id");
-
-ALTER TABLE "session" ADD FOREIGN KEY ("client_id") REFERENCES "client" ("id");
-
-CREATE INDEX ON "session" ("user_id");
-
-CREATE INDEX ON "session" ("client_id");
-
-
-CREATE TABLE IF NOT EXISTS "client" (
-  "id" BIGSERIAL PRIMARY KEY,
-  "name" VARCHAR(128) NOT NULL
-);
-
-CREATE INDEX ON "client" ("id");
-
-CREATE INDEX ON "client" ("name");
 
 COMMENT ON COLUMN "user"."password" IS 'bcrypt';
 
