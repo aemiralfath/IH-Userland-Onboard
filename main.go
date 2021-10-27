@@ -73,9 +73,12 @@ func main() {
 		RedisDB:    redisDB,
 	}
 
+	serverHelperSouce := &api.HelperSource{
+		Jwtauth: helper.New(jwtCfg),
+		Email:   helper.NewEmail(emailCfg),
+	}
+
 	log.Info().Msg("starting api server")
-	jwt := helper.New(jwtCfg)
-	email := helper.NewEmail(emailCfg)
-	srv := api.NewServer(serverCfg, jwt, email, serverDataSource)
+	srv := api.NewServer(serverCfg, serverHelperSouce, serverDataSource)
 	srv.Start()
 }

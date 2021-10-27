@@ -12,12 +12,14 @@ import (
 
 	"github.com/aemiralfath/IH-Userland-Onboard/api/handler/auth"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/handler/me"
+	"github.com/aemiralfath/IH-Userland-Onboard/api/handler/session"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore/postgres"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore/redisdb"
 	"github.com/go-chi/chi"
 	"github.com/go-redis/redis/v8"
+	"github.com/rs/zerolog/log"
 )
 
 type ServerConfig struct {
@@ -33,33 +35,30 @@ type DataSource struct {
 	RedisDB    *redis.Client
 }
 
-type stores struct {
+type HelperSource struct {
+	Jwtauth *helper.JWTAuth
+	Email   *helper.Email
+}
+
+type serverStores struct {
 	userStore     datastore.UserStore
 	profileStore  datastore.ProfileStore
 	passwordStore datastore.PasswordStore
 	tokenStore    datastore.TokenStore
 }
 
-type serverHelper struct {
-	jwtauth *helper.JWTAuth
-	email   *helper.Email
-}
-
 type Server struct {
 	Config     ServerConfig
 	DataSource *DataSource
-	helper     *serverHelper
-	stores     *stores
+	helper     *HelperSource
+	stores     *serverStores
 }
 
-func NewServer(config ServerConfig, jwtauth *helper.JWTAuth, email *helper.Email, dataSource *DataSource) *Server {
+func NewServer(config ServerConfig, helper *HelperSource, dataSource *DataSource) *Server {
 	return &Server{
 		Config:     config,
 		DataSource: dataSource,
-		helper: &serverHelper{
-			jwtauth: jwtauth,
-			email:   email,
-		},
+		helper:     helper,
 	}
 }
 
@@ -68,7 +67,7 @@ func (s *Server) initStores() error {
 	profileStore := postgres.NewProfileStore(s.DataSource.PostgresDB)
 	passwordStore := postgres.NewPasswordStore(s.DataSource.PostgresDB)
 	tokenStore := redisdb.NewTokenStore(s.DataSource.RedisDB)
-	s.stores = &stores{
+	s.stores = &serverStores{
 		userStore:     userStore,
 		profileStore:  profileStore,
 		passwordStore: passwordStore,
@@ -82,17 +81,25 @@ func (s *Server) createHandlers() http.Handler {
 	r := chi.NewRouter()
 
 	r.Group(func(r chi.Router) {
-		r.Use(helper.Verifier(s.helper.jwtauth))
+		r.Use(helper.Verifier(s.helper.Jwtauth))
 		r.Use(helper.Authenticator)
 		r.Route("/me", func(r chi.Router) {
-			r.Get("/", me.GetProfile(*s.helper.jwtauth, s.stores.profileStore))
-			r.Post("/", me.UpdateProfile(*s.helper.jwtauth, s.stores.profileStore))
-			r.Get("/email", me.GetEmail(*s.helper.jwtauth, s.stores.userStore))
-			r.Post("/email", me.ChangeEmail(*s.helper.jwtauth, *s.helper.email, s.stores.userStore, s.stores.tokenStore))
-			r.Post("/password", me.ChangePassword(*s.helper.jwtauth, s.stores.userStore, s.stores.passwordStore))
-			r.Post("/picture", me.SetPicture(*s.helper.jwtauth, s.stores.profileStore))
-			r.Delete("/picture", me.DeletePicture(*s.helper.jwtauth, s.stores.profileStore))
-			r.Post("/delete", me.DeleteAccount(*s.helper.jwtauth, s.stores.userStore))
+			r.Get("/", me.GetProfile(*s.helper.Jwtauth, s.stores.profileStore))
+			r.Post("/", me.UpdateProfile(*s.helper.Jwtauth, s.stores.profileStore))
+
+			r.Get("/email", me.GetEmail(*s.helper.Jwtauth, s.stores.userStore))
+			r.Post("/email", me.ChangeEmail(*s.helper.Jwtauth, *s.helper.Email, s.stores.userStore, s.stores.tokenStore))
+
+			r.Post("/picture", me.SetPicture(*s.helper.Jwtauth, s.stores.profileStore))
+			r.Delete("/picture", me.DeletePicture(*s.helper.Jwtauth, s.stores.profileStore))
+
+			r.Post("/password", me.ChangePassword(*s.helper.Jwtauth, s.stores.userStore, s.stores.passwordStore))
+			r.Post("/delete", me.DeleteAccount(*s.helper.Jwtauth, s.stores.userStore))
+
+			r.Route("/session", func(r chi.Router) {
+				r.Get("/refresh_token", session.GetRefreshToken(*s.helper.Jwtauth))
+				r.Get("/access_token", session.GetAccessToken(*s.helper.Jwtauth))
+			})
 		})
 
 	})
@@ -103,12 +110,12 @@ func (s *Server) createHandlers() http.Handler {
 		})
 
 		r.Route("/auth", func(r chi.Router) {
-			r.Post("/register", auth.Register(*s.helper.email, s.stores.userStore, s.stores.profileStore, s.stores.passwordStore, s.stores.tokenStore))
-			r.Post("/verification", auth.Verification(*s.helper.email, s.stores.tokenStore, s.stores.userStore))
-			r.Post("/login", auth.Login(*s.helper.jwtauth, s.stores.userStore))
+			r.Post("/register", auth.Register(*s.helper.Email, s.stores.userStore, s.stores.profileStore, s.stores.passwordStore, s.stores.tokenStore))
+			r.Post("/verification", auth.Verification(*s.helper.Email, s.stores.tokenStore, s.stores.userStore))
+			r.Post("/login", auth.Login(*s.helper.Jwtauth, s.stores.userStore))
 
 			r.Route("/password", func(r chi.Router) {
-				r.Post("/forgot", auth.ForgotPassword(*s.helper.email, s.stores.userStore, s.stores.tokenStore))
+				r.Post("/forgot", auth.ForgotPassword(*s.helper.Email, s.stores.userStore, s.stores.tokenStore))
 				r.Post("/reset", auth.ResetPassword(s.stores.userStore, s.stores.passwordStore, s.stores.tokenStore))
 			})
 		})
@@ -145,12 +152,10 @@ func (s *Server) Start() {
 
 	err := srv.ListenAndServe()
 	if err != http.ErrServerClosed {
-		// TODO replace with zlogger fatal
-		panic("cannot start server")
+		log.Fatal().Err(err).Stack().Msg("cannot start server")
 	}
-	// TODO with proper logging with zlogger
-	fmt.Printf("serving %s\n", address)
 
+	log.Info().Msg(fmt.Sprintf("serving %s\n", address))
 	go func(srv *http.Server) {
 		<-osSigChan
 		err := srv.Shutdown(shutdownCtx)

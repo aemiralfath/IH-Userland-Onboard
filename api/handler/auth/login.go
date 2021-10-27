@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
@@ -41,36 +40,15 @@ func Login(jwtAuth helper.JWTAuth, userStore datastore.UserStore) http.HandlerFu
 			return
 		}
 
-		accessTokenClaims := make(map[string]interface{})
-		accessTokenClaims["id"] = usr.ID
-		accessTokenClaims["email"] = usr.Email
-		helper.SetIssuedNow(accessTokenClaims)
-		helper.SetExpiryIn(accessTokenClaims, time.Duration(helper.AccessTokenExpiration))
-
-		_, accessToken, err := jwtAuth.Encode(accessTokenClaims)
+		accessToken, err := jwtAuth.CreateToken(usr.ID, usr.Email, helper.AccessTokenExpiration)
 		if err != nil {
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
-		// refreshTokenClaims := make(map[string]interface{})
-		// refreshTokenClaims["email"] = usr.Email
-		// helper.SetIssuedNow(refreshTokenClaims)
-		// helper.SetExpiryIn(refreshTokenClaims, time.Duration(helper.RefreshTokenExpiration))
-
-		// _, refreshToken, err := jwtAuth.Encode(refreshTokenClaims)
-		// if err != nil {
-		// 	fmt.Println(render.Render(w, r, handler.BadRequestErrorRenderer(err)))
-		// 	return
-		// }
-
 		helper.CustomRender(w, http.StatusOK, map[string]interface{}{
-			"require_tfa": false,
-			"access_token": map[string]string{
-				"value":      accessToken,
-				"type":       "BEARER",
-				"expired_at": time.Unix(accessTokenClaims["exp"].(int64), 0).String(),
-			},
+			"require_tfa":  false,
+			"access_token": accessToken,
 		})
 	}
 }
