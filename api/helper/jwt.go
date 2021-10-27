@@ -135,25 +135,26 @@ func Authenticator(next http.Handler) http.Handler {
 	})
 }
 
-func (jwtAuth JWTAuth) CreateToken(userID float64, email string, minute int) (*Token, error) {
+func (jwtAuth JWTAuth) CreateToken(userID float64, email string, minute int) (*Token, string, error) {
+	jti := GenerateRandomID()
 	expires_at := time.Now().Add(time.Duration(minute) * time.Minute)
 
 	accessTokenClaims := make(map[string]interface{})
-	accessTokenClaims["id"] = GenerateRandomID()
+	accessTokenClaims["id"] = jti
 	accessTokenClaims["email"] = email
 	accessTokenClaims["userID"] = userID
 	accessTokenClaims["exp"] = expires_at
 
 	_, tokenString, err := jwtAuth.Encode(accessTokenClaims)
 	if err != nil {
-		return nil, err
+		return nil, jti, err
 	}
 
 	return &Token{
 		Value:     tokenString,
 		Type:      "BEARER",
 		ExpiredAt: expires_at,
-	}, nil
+	}, jti, nil
 }
 
 type contextKey struct {

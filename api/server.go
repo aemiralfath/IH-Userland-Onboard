@@ -44,6 +44,9 @@ type serverStores struct {
 	userStore     datastore.UserStore
 	profileStore  datastore.ProfileStore
 	passwordStore datastore.PasswordStore
+	sessionStore  datastore.SessionStore
+	clientStore   datastore.ClientStore
+	eventStore    datastore.EventStore
 	tokenStore    datastore.TokenStore
 }
 
@@ -66,11 +69,18 @@ func (s *Server) initStores() error {
 	userStore := postgres.NewUserStore(s.DataSource.PostgresDB)
 	profileStore := postgres.NewProfileStore(s.DataSource.PostgresDB)
 	passwordStore := postgres.NewPasswordStore(s.DataSource.PostgresDB)
+	sessionStore := postgres.NewSessionStore(s.DataSource.PostgresDB)
+	clientStore := postgres.NewClientStore(s.DataSource.PostgresDB)
+	eventStore := postgres.NewEventStore(s.DataSource.PostgresDB)
 	tokenStore := redisdb.NewTokenStore(s.DataSource.RedisDB)
+
 	s.stores = &serverStores{
 		userStore:     userStore,
 		profileStore:  profileStore,
 		passwordStore: passwordStore,
+		sessionStore:  sessionStore,
+		clientStore:   clientStore,
+		eventStore:    eventStore,
 		tokenStore:    tokenStore,
 	}
 	return nil
@@ -97,6 +107,7 @@ func (s *Server) createHandlers() http.Handler {
 			r.Post("/delete", me.DeleteAccount(*s.helper.Jwtauth, s.stores.userStore))
 
 			r.Route("/session", func(r chi.Router) {
+				// r.Get("/", session.GetListSession())
 				r.Get("/refresh_token", session.GetRefreshToken(*s.helper.Jwtauth))
 				r.Get("/access_token", session.GetAccessToken(*s.helper.Jwtauth))
 			})
@@ -112,7 +123,7 @@ func (s *Server) createHandlers() http.Handler {
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/register", auth.Register(*s.helper.Email, s.stores.userStore, s.stores.profileStore, s.stores.passwordStore, s.stores.tokenStore))
 			r.Post("/verification", auth.Verification(*s.helper.Email, s.stores.tokenStore, s.stores.userStore))
-			r.Post("/login", auth.Login(*s.helper.Jwtauth, s.stores.userStore))
+			r.Post("/login", auth.Login(*s.helper.Jwtauth, s.stores.userStore, s.stores.sessionStore, s.stores.clientStore, s.stores.eventStore))
 
 			r.Route("/password", func(r chi.Router) {
 				r.Post("/forgot", auth.ForgotPassword(*s.helper.Email, s.stores.userStore, s.stores.tokenStore))

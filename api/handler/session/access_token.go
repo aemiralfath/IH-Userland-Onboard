@@ -20,7 +20,7 @@ func GetAccessToken(jwtAuth helper.JWTAuth) http.HandlerFunc {
 		userId := claims["userID"]
 		userEmail := claims["email"]
 
-		accessToken, err := jwtAuth.CreateToken(userId.(float64), userEmail.(string), helper.AccessTokenExpiration)
+		accessToken, _, err := jwtAuth.CreateToken(userId.(float64), userEmail.(string), helper.AccessTokenExpiration)
 		if err != nil {
 			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 			return

@@ -15,11 +15,12 @@ type loginRequest struct {
 	Password string `json:"password"`
 }
 
-func Login(jwtAuth helper.JWTAuth, userStore datastore.UserStore) http.HandlerFunc {
+func Login(jwtAuth helper.JWTAuth, userStore datastore.UserStore, sessionStore datastore.SessionStore, clientStore datastore.ClientStore, eventStore datastore.EventStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
 		req := &loginRequest{}
+		clientName := r.Header.Get("X-API-ClientID")
 
 		if err := render.Bind(r, req); err != nil {
 			render.Render(w, r, helper.BadRequestErrorRenderer(err))
@@ -40,8 +41,24 @@ func Login(jwtAuth helper.JWTAuth, userStore datastore.UserStore) http.HandlerFu
 			return
 		}
 
-		accessToken, err := jwtAuth.CreateToken(usr.ID, usr.Email, helper.AccessTokenExpiration)
+		accessToken, jti, err := jwtAuth.CreateToken(usr.ID, usr.Email, helper.AccessTokenExpiration)
 		if err != nil {
+			render.Render(w, r, helper.InternalServerErrorRenderer(err))
+			return
+		}
+
+		if err := sessionStore.AddNewSession(ctx, &datastore.Session{JTI: jti, UserId: usr.ID, IsCurrent: true}); err != nil {
+			render.Render(w, r, helper.InternalServerErrorRenderer(err))
+			return
+		}
+
+		client, err := clientStore.GetClientByName(ctx, clientName)
+		if err != nil {
+			render.Render(w, r, helper.InternalServerErrorRenderer(err))
+			return
+		}
+
+		if err := eventStore.AddNewEvent(ctx, jti, client.ID); err != nil {
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}

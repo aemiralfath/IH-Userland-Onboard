@@ -33,6 +33,43 @@ type Password struct {
 	CreatedAt string  `json:"createdAt" sql:"created_at"`
 }
 
+type Session struct {
+	JTI       string  `json:"JTI" sql:"jti"`
+	UserId    float64 `json:"userId" sql:"user_id"`
+	IsCurrent bool    `json:"isCurrent" validate:"required" sql:"is_current"`
+}
+
+type Client struct {
+	ID   float64 `json:"id" sql:"id"`
+	Name string  `json:"name" validate:"required" sql:"name"`
+}
+
+type Event struct {
+	ID        float64 `json:"id" sql:"id"`
+	SessionId string  `json:"JTI" sql:"jti"`
+	ClientId  float64 `json:"clientId" sql:"client_id"`
+	Event     string  `json:"event" sql:"event"`
+	UserAgent string  `json:"userAgent" sql:"user_agent"`
+	IP        string  `json:"ip" sql:"ip"`
+	CreatedAt string  `json:"createdAt" sql:"created_at"`
+	UpdatedAt string  `json:"updatedAt" sql:"updated_at"`
+}
+
+type SessionStore interface {
+	GetUserSession(ctx context.Context, userId float64) (*Session, error)
+	AddNewSession(ctx context.Context, session *Session) error
+}
+
+type ClientStore interface {
+	GetClientByName(ctx context.Context, name string) (*Client, error)
+	AddNewClient(ctx context.Context, name string) (*Client, error)
+}
+
+type EventStore interface {
+	GetEventBySession(ctx context.Context, sessionId string) (*Event, error)
+	AddNewEvent(ctx context.Context, sessionId string, clientId float64) error
+}
+
 type ProfileStore interface {
 	GetProfile(ctx context.Context, userId float64) (*Profile, error)
 	AddNewProfile(ctx context.Context, profile *Profile, userId float64) error

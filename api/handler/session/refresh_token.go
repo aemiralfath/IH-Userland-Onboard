@@ -20,7 +20,7 @@ func GetRefreshToken(jwtAuth helper.JWTAuth) http.HandlerFunc {
 		userId := claims["userID"]
 		userEmail := claims["email"]
 
-		refreshToken, err := jwtAuth.CreateToken(userId.(float64), userEmail.(string), helper.RefreshTokenExpiration)
+		refreshToken, _, err := jwtAuth.CreateToken(userId.(float64), userEmail.(string), helper.RefreshTokenExpiration)
 		if err != nil {
 			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 			return

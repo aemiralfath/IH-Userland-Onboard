@@ -49,25 +49,25 @@ ALTER TABLE "tfa" ADD FOREIGN KEY ("user_id") REFERENCES "user" ("id");
 
 CREATE INDEX ON "tfa" ("user_id");
 
-CREATE TABLE IF NOT EXISTS "tfa_codes" (
+CREATE TABLE IF NOT EXISTS "tfa_code" (
   "id" BIGSERIAL PRIMARY KEY,
   "tfa_id" BIGINT,
   "code" VARCHAR(128) NOT NULL
 );
 
-ALTER TABLE "tfa_codes" ADD FOREIGN KEY ("tfa_id") REFERENCES "tfa" ("id");
+ALTER TABLE "tfa_code" ADD FOREIGN KEY ("tfa_id") REFERENCES "tfa" ("id");
 
-CREATE INDEX ON "tfa_codes" ("tfa_id");
+CREATE INDEX ON "tfa_code" ("tfa_id");
 
-CREATE TABLE IF NOT EXISTS "sessions" (
-  "id" BIGSERIAL PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS "session" (
+  "jti" VARCHAR(255)  PRIMARY KEY,
   "user_id" BIGINT,
   "is_current" BOOLEAN NOT NULL DEFAULT TRUE
 );
 
-ALTER TABLE "sessions" ADD FOREIGN KEY ("user_id") REFERENCES "user" ("id");
+ALTER TABLE "session" ADD FOREIGN KEY ("user_id") REFERENCES "user" ("id");
 
-CREATE INDEX ON "sessions" ("user_id");
+CREATE INDEX ON "session" ("user_id");
 
 CREATE TABLE IF NOT EXISTS "client" (
   "id" BIGSERIAL PRIMARY KEY,
@@ -76,24 +76,26 @@ CREATE TABLE IF NOT EXISTS "client" (
 
 CREATE INDEX ON "client" ("id");
 
-CREATE TABLE IF NOT EXISTS "events" (
+CREATE INDEX ON "client" ("name");
+
+CREATE TABLE IF NOT EXISTS "event" (
   "id" BIGSERIAL PRIMARY KEY,
-  "session_id" BIGINT,
+  "session_id" VARCHAR(255),
   "client_id" BIGINT,
-  "event" VARCHAR(255) NOT NULL,
-  "user_agent" TEXT NOT NULL,
-  "ip" TEXT NOT NULL,
+  "event" VARCHAR(255),
+  "user_agent" TEXT,
+  "ip" TEXT,
   "created_at" timestamptz NOT NULL DEFAULT (now()),
   "updated_at" timestamptz NOT NULL DEFAULT (now())
 );
 
-ALTER TABLE "events" ADD FOREIGN KEY ("session_id") REFERENCES "sessions" ("id");
+ALTER TABLE "event" ADD FOREIGN KEY ("session_id") REFERENCES "session" ("jti");
 
-ALTER TABLE "events" ADD FOREIGN KEY ("client_id") REFERENCES "client" ("id");
+ALTER TABLE "event" ADD FOREIGN KEY ("client_id") REFERENCES "client" ("id");
 
-CREATE INDEX ON "events" ("session_id");
+CREATE INDEX ON "event" ("session_id");
 
-CREATE INDEX ON "events" ("client_id");
+CREATE INDEX ON "event" ("client_id");
 
 COMMENT ON COLUMN "user"."password" IS 'bcrypt';
 
@@ -117,8 +119,8 @@ COMMENT ON COLUMN "tfa"."enable" IS 'true require, false not require';
 
 COMMENT ON COLUMN "tfa"."enable_at" IS 'full RFC3339 format';
 
-COMMENT ON COLUMN "sessions"."is_current" IS 'true login, false not login';
+COMMENT ON COLUMN "session"."is_current" IS 'true login, false not login';
 
-COMMENT ON COLUMN "events"."created_at" IS 'full RFC3339 format';
+COMMENT ON COLUMN "event"."created_at" IS 'full RFC3339 format';
 
-COMMENT ON COLUMN "events"."updated_at" IS 'full RFC3339 format';
+COMMENT ON COLUMN "event"."updated_at" IS 'full RFC3339 format';
