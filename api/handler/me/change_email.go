@@ -42,7 +42,7 @@ func ChangeEmail(jwtAuth helper.JWTAuth, email helper.Email, userStore datastore
 			return
 		}
 
-		userId := claims["id"]
+		userId := claims["userID"]
 		value := fmt.Sprintf("%f-%s", userId.(float64), req.Email)
 		if err := token.SetToken(ctx, "user", value, tokenCode); err != nil {
 			render.Render(rw, r, helper.InternalServerErrorRenderer(err))

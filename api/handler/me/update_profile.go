@@ -33,7 +33,7 @@ func UpdateProfile(jwtAuth helper.JWTAuth, profileStore datastore.ProfileStore) 
 			return
 		}
 
-		userId := claims["id"]
+		userId := claims["userID"]
 		if err := profileStore.UpdateProfile(ctx, parseUpdateRequestProfile(req), userId.(float64)); err != nil {
 			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 			return

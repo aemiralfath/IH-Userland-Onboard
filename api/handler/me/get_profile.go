@@ -18,7 +18,7 @@ func GetProfile(jwtAuth helper.JWTAuth, profileStore datastore.ProfileStore) htt
 			return
 		}
 
-		userId := claims["id"]
+		userId := claims["userID"]
 		profile, err := profileStore.GetProfile(ctx, userId.(float64))
 		if err != nil {
 			fmt.Println(render.Render(rw, r, helper.InternalServerErrorRenderer(err)))

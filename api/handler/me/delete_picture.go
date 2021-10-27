@@ -19,7 +19,7 @@ func DeletePicture(jwtAuth helper.JWTAuth, profileStore datastore.ProfileStore) 
 			return
 		}
 
-		userId := claims["id"]
+		userId := claims["userID"]
 		profile, err := profileStore.GetProfile(ctx, userId.(float64))
 		if err != nil {
 			fmt.Println(render.Render(rw, r, helper.UnauthorizedErrorRenderer(err)))

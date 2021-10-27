@@ -18,7 +18,7 @@ func GetEmail(jwtAuth helper.JWTAuth, userStore datastore.UserStore) http.Handle
 			return
 		}
 
-		userId := claims["id"]
+		userId := claims["userID"]
 		email, err := userStore.GetEmailByID(ctx, userId.(float64))
 		if err != nil {
 			fmt.Println(render.Render(rw, r, helper.InternalServerErrorRenderer(err)))
