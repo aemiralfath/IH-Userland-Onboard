@@ -14,7 +14,7 @@ type changeEmailRequest struct {
 	Email string `json:"email"`
 }
 
-func ChangeEmail(jwtAuth helper.JWTAuth, userStore datastore.UserStore, token datastore.TokenStore) http.HandlerFunc {
+func ChangeEmail(jwtAuth helper.JWTAuth, email helper.Email, userStore datastore.UserStore, token datastore.TokenStore) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		req := &changeEmailRequest{}
@@ -52,7 +52,7 @@ func ChangeEmail(jwtAuth helper.JWTAuth, userStore datastore.UserStore, token da
 		subject := "Userland Change Email Verification!"
 		msg := fmt.Sprintf("Use this otp for verify your new email: %s", tokenCode)
 
-		go helper.SendEmail(req.Email, subject, msg)
+		go email.SendEmail(req.Email, subject, msg)
 
 		if err := render.Render(rw, r, helper.SuccesRenderer()); err != nil {
 			render.Render(rw, r, helper.InternalServerErrorRenderer(err))

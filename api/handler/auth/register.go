@@ -17,7 +17,7 @@ type registerRequest struct {
 	PasswordConfirm string `json:"password_confirm"`
 }
 
-func Register(userStore datastore.UserStore, profileStore datastore.ProfileStore, passwordStore datastore.PasswordStore, token datastore.TokenStore) http.HandlerFunc {
+func Register(email helper.Email, userStore datastore.UserStore, profileStore datastore.ProfileStore, passwordStore datastore.PasswordStore, token datastore.TokenStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
@@ -72,7 +72,7 @@ func Register(userStore datastore.UserStore, profileStore datastore.ProfileStore
 		subject := "Userland Email Verification!"
 		msg := fmt.Sprintf("Use this otp for verify your email: %s", tokenCode)
 
-		go helper.SendEmail(req.Email, subject, msg)
+		go email.SendEmail(req.Email, subject, msg)
 
 		if err := render.Render(w, r, helper.SuccesRenderer()); err != nil {
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))

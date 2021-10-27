@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS "user" (
   "deleted_at" timestamptz
 );
 
+CREATE INDEX ON "user" ("email");
+
 CREATE TABLE IF NOT EXISTS "password" (
   "id" BIGSERIAL PRIMARY KEY,
   "user_id" BIGINT,
@@ -34,17 +36,25 @@ CREATE TABLE IF NOT EXISTS "password" (
   "created_at" timestamptz NOT NULL DEFAULT (now())
 );
 
+ALTER TABLE "password" ADD FOREIGN KEY ("user_id") REFERENCES "user" ("id");
+
+CREATE INDEX ON "password" ("user_id");
+
 CREATE TABLE IF NOT EXISTS "profile" (
   "id" BIGSERIAL PRIMARY KEY,
   "user_id" BIGINT,
   "fullname" VARCHAR(128) NOT NULL,
-  "location" VARCHAR(128),
-  "bio" TEXT,
-  "web" VARCHAR(128),
-  "picture" VARCHAR(128),
+  "location" VARCHAR(128) NOT NULL DEFAULT '',
+  "bio" TEXT NOT NULL DEFAULT '',
+  "web" VARCHAR(128) NOT NULL DEFAULT '',
+  "picture" VARCHAR(128) NOT NULL DEFAULT '',
   "created_at" timestamptz NOT NULL DEFAULT (now()),
   "updated_at" timestamptz NOT NULL DEFAULT (now())
 );
+
+ALTER TABLE "profile" ADD FOREIGN KEY ("user_id") REFERENCES "user" ("id");
+
+CREATE INDEX ON "profile" ("user_id");
 
 CREATE TABLE IF NOT EXISTS "tfa" (
   "id" BIGSERIAL PRIMARY KEY,
@@ -54,11 +64,19 @@ CREATE TABLE IF NOT EXISTS "tfa" (
   "enable_at" timestamptz
 );
 
+ALTER TABLE "tfa" ADD FOREIGN KEY ("user_id") REFERENCES "user" ("id");
+
+CREATE INDEX ON "tfa" ("user_id");
+
 CREATE TABLE IF NOT EXISTS "tfa_codes" (
   "id" BIGSERIAL PRIMARY KEY,
   "tfa_id" BIGINT,
   "code" VARCHAR(128) NOT NULL
 );
+
+ALTER TABLE "tfa_codes" ADD FOREIGN KEY ("tfa_id") REFERENCES "tfa" ("id");
+
+CREATE INDEX ON "tfa_codes" ("tfa_id");
 
 CREATE TABLE IF NOT EXISTS "sessions" (
   "id" BIGSERIAL PRIMARY KEY,
@@ -66,10 +84,16 @@ CREATE TABLE IF NOT EXISTS "sessions" (
   "is_current" BOOLEAN NOT NULL DEFAULT TRUE
 );
 
+ALTER TABLE "sessions" ADD FOREIGN KEY ("user_id") REFERENCES "user" ("id");
+
+CREATE INDEX ON "sessions" ("user_id");
+
 CREATE TABLE IF NOT EXISTS "client" (
   "id" BIGSERIAL PRIMARY KEY,
   "name" VARCHAR(128) NOT NULL
 );
+
+CREATE INDEX ON "client" ("id");
 
 CREATE TABLE IF NOT EXISTS "events" (
   "id" BIGSERIAL PRIMARY KEY,
@@ -82,35 +106,13 @@ CREATE TABLE IF NOT EXISTS "events" (
   "updated_at" timestamptz NOT NULL DEFAULT (now())
 );
 
-ALTER TABLE "password" ADD FOREIGN KEY ("user_id") REFERENCES "user" ("id");
-
-ALTER TABLE "profile" ADD FOREIGN KEY ("user_id") REFERENCES "user" ("id");
-
-ALTER TABLE "tfa" ADD FOREIGN KEY ("user_id") REFERENCES "user" ("id");
-
-ALTER TABLE "tfa_codes" ADD FOREIGN KEY ("tfa_id") REFERENCES "tfa" ("id");
-
-ALTER TABLE "sessions" ADD FOREIGN KEY ("user_id") REFERENCES "user" ("id");
-
 ALTER TABLE "events" ADD FOREIGN KEY ("session_id") REFERENCES "sessions" ("id");
 
 ALTER TABLE "events" ADD FOREIGN KEY ("client_id") REFERENCES "client" ("id");
 
-CREATE INDEX ON "user" ("email");
-
-CREATE INDEX ON "password" ("user_id");
-
-CREATE INDEX ON "profile" ("user_id");
-
-CREATE INDEX ON "tfa" ("user_id");
-
-CREATE INDEX ON "tfa_codes" ("tfa_id");
-
-CREATE INDEX ON "sessions" ("user_id");
-
-CREATE INDEX ON "client" ("id");
-
 CREATE INDEX ON "events" ("session_id");
+
+CREATE INDEX ON "events" ("client_id");
 
 COMMENT ON COLUMN "user"."password" IS 'bcrypt';
 

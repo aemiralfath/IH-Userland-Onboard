@@ -11,6 +11,12 @@ import (
 	"github.com/lestrrat-go/jwx/jwt"
 )
 
+type JWTConfig struct {
+	Alg       string
+	SignKey   interface{}
+	VerifyKey interface{}
+}
+
 type JWTAuth struct {
 	alg       jwa.SignatureAlgorithm
 	signKey   interface{} // private-key
@@ -34,11 +40,11 @@ var (
 	ErrAlgoInvalid  = errors.New("algorithm mismatch")
 )
 
-func New(alg string, signKey interface{}, verifyKey interface{}) *JWTAuth {
-	ja := &JWTAuth{alg: jwa.SignatureAlgorithm(alg), signKey: signKey, verifyKey: verifyKey}
+func New(jwtConfig JWTConfig) *JWTAuth {
+	ja := &JWTAuth{alg: jwa.SignatureAlgorithm(jwtConfig.Alg), signKey: []byte(jwtConfig.SignKey.(string)), verifyKey: jwtConfig.VerifyKey}
 
 	if ja.verifyKey != nil {
-		ja.verifier = jwt.WithVerify(ja.alg, ja.verifyKey)
+		ja.verifier = jwt.WithVerify(ja.alg, []byte(ja.verifyKey.(string)))
 	} else {
 		ja.verifier = jwt.WithVerify(ja.alg, ja.signKey)
 	}

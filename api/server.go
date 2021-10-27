@@ -40,21 +40,26 @@ type stores struct {
 	tokenStore    datastore.TokenStore
 }
 
-type jwtConfig struct {
-	tokenAuth *helper.JWTAuth
+type serverHelper struct {
+	jwtauth *helper.JWTAuth
+	email   *helper.Email
 }
 
 type Server struct {
 	Config     ServerConfig
 	DataSource *DataSource
+	helper     *serverHelper
 	stores     *stores
-	jwt        *jwtConfig
 }
 
-func NewServer(config ServerConfig, dataSource *DataSource) *Server {
+func NewServer(config ServerConfig, jwtauth *helper.JWTAuth, email *helper.Email, dataSource *DataSource) *Server {
 	return &Server{
 		Config:     config,
 		DataSource: dataSource,
+		helper: &serverHelper{
+			jwtauth: jwtauth,
+			email:   email,
+		},
 	}
 }
 
@@ -72,31 +77,22 @@ func (s *Server) initStores() error {
 	return nil
 }
 
-func (s *Server) initJwt() error {
-	// user .env for secret
-	tokenAuth := helper.New("HS256", []byte("secretSign"), nil)
-	s.jwt = &jwtConfig{
-		tokenAuth: tokenAuth,
-	}
-	return nil
-}
-
 func (s *Server) createHandlers() http.Handler {
 	// TODO pprof and healthcheck
 	r := chi.NewRouter()
 
 	r.Group(func(r chi.Router) {
-		r.Use(helper.Verifier(s.jwt.tokenAuth))
+		r.Use(helper.Verifier(s.helper.jwtauth))
 		r.Use(helper.Authenticator)
 		r.Route("/me", func(r chi.Router) {
-			r.Get("/", me.GetProfile(*s.jwt.tokenAuth, s.stores.profileStore))
-			r.Post("/", me.UpdateProfile(*s.jwt.tokenAuth, s.stores.profileStore))
-			r.Get("/email", me.GetEmail(*s.jwt.tokenAuth, s.stores.userStore))
-			r.Post("/email", me.ChangeEmail(*s.jwt.tokenAuth, s.stores.userStore, s.stores.tokenStore))
-			r.Post("/password", me.ChangePassword(*s.jwt.tokenAuth, s.stores.userStore, s.stores.passwordStore))
-			r.Post("/picture", me.SetPicture(*s.jwt.tokenAuth, s.stores.profileStore))
-			r.Delete("/picture", me.DeletePicture(*s.jwt.tokenAuth, s.stores.profileStore))
-			r.Post("/delete", me.DeleteAccount(*s.jwt.tokenAuth, s.stores.userStore))
+			r.Get("/", me.GetProfile(*s.helper.jwtauth, s.stores.profileStore))
+			r.Post("/", me.UpdateProfile(*s.helper.jwtauth, s.stores.profileStore))
+			r.Get("/email", me.GetEmail(*s.helper.jwtauth, s.stores.userStore))
+			r.Post("/email", me.ChangeEmail(*s.helper.jwtauth, *s.helper.email, s.stores.userStore, s.stores.tokenStore))
+			r.Post("/password", me.ChangePassword(*s.helper.jwtauth, s.stores.userStore, s.stores.passwordStore))
+			r.Post("/picture", me.SetPicture(*s.helper.jwtauth, s.stores.profileStore))
+			r.Delete("/picture", me.DeletePicture(*s.helper.jwtauth, s.stores.profileStore))
+			r.Post("/delete", me.DeleteAccount(*s.helper.jwtauth, s.stores.userStore))
 		})
 
 	})
@@ -107,12 +103,12 @@ func (s *Server) createHandlers() http.Handler {
 		})
 
 		r.Route("/auth", func(r chi.Router) {
-			r.Post("/register", auth.Register(s.stores.userStore, s.stores.profileStore, s.stores.passwordStore, s.stores.tokenStore))
-			r.Post("/verification", auth.Verification(s.stores.tokenStore, s.stores.userStore))
-			r.Post("/login", auth.Login(*s.jwt.tokenAuth, s.stores.userStore))
+			r.Post("/register", auth.Register(*s.helper.email, s.stores.userStore, s.stores.profileStore, s.stores.passwordStore, s.stores.tokenStore))
+			r.Post("/verification", auth.Verification(*s.helper.email, s.stores.tokenStore, s.stores.userStore))
+			r.Post("/login", auth.Login(*s.helper.jwtauth, s.stores.userStore))
 
 			r.Route("/password", func(r chi.Router) {
-				r.Post("/forgot", auth.ForgotPassword(s.stores.userStore, s.stores.tokenStore))
+				r.Post("/forgot", auth.ForgotPassword(*s.helper.email, s.stores.userStore, s.stores.tokenStore))
 				r.Post("/reset", auth.ResetPassword(s.stores.userStore, s.stores.passwordStore, s.stores.tokenStore))
 			})
 		})
@@ -130,7 +126,6 @@ func (s *Server) Start() {
 	}()
 
 	_ = s.initStores()
-	_ = s.initJwt()
 
 	r := s.createHandlers()
 	address := fmt.Sprintf("%s:%s", s.Config.Host, s.Config.Port)
