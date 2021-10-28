@@ -37,9 +37,9 @@ services:
           - adminer
   userland:
     image: golang:1.17
-    working_dir: /IH-Userland-Onboard
+    working_dir: /ih-userland-onboard
     volumes:
-      - ./:/IH-Userland-Onboard:ro
+      - ./:/ih-userland-onboard
     command: /bin/bash -c "go run ."
     ports:
       - "8080:8080/tcp"
