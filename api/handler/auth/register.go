@@ -17,7 +17,7 @@ type registerRequest struct {
 	PasswordConfirm string `json:"password_confirm"`
 }
 
-func Register(userStore datastore.UserStore, profileStore datastore.ProfileStore, passwordStore datastore.PasswordStore, token datastore.TokenStore) http.HandlerFunc {
+func Register(email helper.Email, userStore datastore.UserStore, profileStore datastore.ProfileStore, passwordStore datastore.PasswordStore, token datastore.TokenStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
@@ -25,6 +25,12 @@ func Register(userStore datastore.UserStore, profileStore datastore.ProfileStore
 
 		if err := render.Bind(r, req); err != nil {
 			render.Render(w, r, helper.BadRequestErrorRenderer(err))
+			return
+		}
+
+		usr, _ := userStore.CheckUserEmailExist(ctx, req.Email)
+		if usr != nil {
+			render.Render(w, r, helper.BadRequestErrorRenderer(fmt.Errorf("Email already exist!")))
 			return
 		}
 
@@ -57,7 +63,8 @@ func Register(userStore datastore.UserStore, profileStore datastore.ProfileStore
 			return
 		}
 
-		if err := token.SetToken(ctx, "user", req.Email, tokenCode); err != nil {
+		value := fmt.Sprintf("%f-%s", userId, req.Email)
+		if err := token.SetToken(ctx, "user", value, tokenCode); err != nil {
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
@@ -65,7 +72,7 @@ func Register(userStore datastore.UserStore, profileStore datastore.ProfileStore
 		subject := "Userland Email Verification!"
 		msg := fmt.Sprintf("Use this otp for verify your email: %s", tokenCode)
 
-		go helper.SendEmail(req.Email, subject, msg)
+		go email.SendEmail(req.Email, subject, msg)
 
 		if err := render.Render(w, r, helper.SuccesRenderer()); err != nil {
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))

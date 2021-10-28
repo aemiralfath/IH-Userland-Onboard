@@ -10,7 +10,7 @@ import (
 
 type PostgresConfig struct {
 	Host     string
-	Port     int
+	Port     string
 	Username string
 	Password string
 	Database string
@@ -18,7 +18,7 @@ type PostgresConfig struct {
 
 func NewPG(config PostgresConfig) (*sql.DB, error) {
 	connString := fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s",
+		"postgres://%s:%s@%s:%s/%s",
 		config.Username,
 		config.Password,
 		config.Host,

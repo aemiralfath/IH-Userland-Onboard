@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 )
@@ -63,6 +64,61 @@ func (s *UserStore) ChangePassword(ctx context.Context, u *datastore.User) error
 	}
 
 	_, err = stmt.ExecContext(ctx, u.Password, u.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *UserStore) GetEmailByID(ctx context.Context, userId float64) (string, error) {
+	query := `SELECT "email" FROM "user" WHERE "deleted_at" IS NULL AND "verified" = true AND "id" = $1`
+	stmt, err := s.db.Prepare(query)
+	if err != nil {
+		return "", err
+	}
+
+	var email string
+	err = stmt.QueryRowContext(ctx, userId).Scan(&email)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", fmt.Errorf("User not found")
+		} else {
+			return "", err
+		}
+	} else {
+		return email, nil
+	}
+}
+
+func (s *UserStore) CheckUserEmailExist(ctx context.Context, email string) (*datastore.User, error) {
+	query := `SELECT "id", "email" FROM "user" WHERE "deleted_at" IS NULL AND "email" = $1`
+	stmt, err := s.db.Prepare(query)
+	if err != nil {
+		return nil, err
+	}
+
+	var user datastore.User
+	err = stmt.QueryRowContext(ctx, email).Scan(&user.ID, &user.Email)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("User not found")
+		} else {
+			return nil, err
+		}
+	} else {
+		return &user, nil
+	}
+}
+
+func (s *UserStore) SafeDeleteUser(ctx context.Context, email string) error {
+	query := `UPDATE "user" SET "deleted_at" = $1 WHERE "email" = $2`
+	stmt, err := s.db.Prepare(query)
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.ExecContext(ctx, time.Now().Format(time.RFC3339), email)
 	if err != nil {
 		return err
 	}

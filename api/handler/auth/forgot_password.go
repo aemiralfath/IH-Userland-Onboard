@@ -14,7 +14,7 @@ type forgotPasswordRequest struct {
 	Email string `json:"Email"`
 }
 
-func ForgotPassword(userStore datastore.UserStore, token datastore.TokenStore) http.HandlerFunc {
+func ForgotPassword(email helper.Email, userStore datastore.UserStore, token datastore.TokenStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
@@ -50,7 +50,7 @@ func ForgotPassword(userStore datastore.UserStore, token datastore.TokenStore) h
 		subject := "Userland Reset Password!"
 		msg := fmt.Sprintf("Use this token for reset your password: %s", tokenCode)
 
-		go helper.SendEmail(req.Email, subject, msg)
+		go email.SendEmail(req.Email, subject, msg)
 
 		if err := render.Render(w, r, helper.SuccesRenderer()); err != nil {
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))

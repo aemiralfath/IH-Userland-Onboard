@@ -1,48 +1,40 @@
 package helper
 
 import (
-	"crypto/rand"
 	"fmt"
 	"net/smtp"
-	"os"
-
-	"github.com/joho/godotenv"
 )
 
-func SendEmail(toEmail string, subject string, msg string) {
-	from := "criptdestroyer@gmail.com"
-	err := godotenv.Load(".env")
+type EmailConfig struct {
+	Host     string
+	Port     string
+	From     string
+	Password string
+}
 
-	email := []byte("To: " + toEmail + "\r\n" +
+type Email struct {
+	Auth smtp.Auth
+	Addr string
+	From string
+}
+
+func NewEmail(config EmailConfig) *Email {
+	return &Email{
+		Auth: smtp.PlainAuth("", config.From, config.Password, config.Host),
+		Addr: fmt.Sprintf("%s:%v", config.Host, config.Port),
+		From: config.From,
+	}
+}
+
+func (email *Email) SendEmail(toEmail string, subject string, msg string) {
+	from := email.From
+	value := []byte("To: " + toEmail + "\r\n" +
 		"From: " + from + "\r\n" +
 		"Subject: " + subject + "\r\n" +
 		"\r\n" + msg + "\r\n")
 
-	if err != nil {
-		fmt.Println(fmt.Errorf("Error loading .env file"))
-		fmt.Println(fmt.Errorf("Error loading .env file"))
-	}
-
-	auth := smtp.PlainAuth("", from, os.Getenv("PASSWORD"), os.Getenv("SMTP_HOST"))
-	smtpAddress := fmt.Sprintf("%s:%v", os.Getenv("SMTP_HOST"), os.Getenv("SMTP_PORT"))
-	err = smtp.SendMail(smtpAddress, auth, from, []string{toEmail}, email)
+	err := smtp.SendMail(email.Addr, email.Auth, from, []string{toEmail}, value)
 	if err != nil {
 		fmt.Println(fmt.Errorf(err.Error()))
 	}
-}
-
-func GenerateOTP(length int) (string, error) {
-	otpChars := "1234567890"
-	buffer := make([]byte, length)
-	_, err := rand.Read(buffer)
-	if err != nil {
-		return "", err
-	}
-
-	otpCharsLength := len(otpChars)
-	for i := 0; i < length; i++ {
-		buffer[i] = otpChars[int(buffer[i])%otpCharsLength]
-	}
-
-	return string(buffer), nil
 }

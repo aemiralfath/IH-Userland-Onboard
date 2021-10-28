@@ -35,13 +35,18 @@ type Password struct {
 
 type ProfileStore interface {
 	GetProfile(ctx context.Context, userId float64) (*Profile, error)
-	AddNewProfile(ctx context.Context, profli *Profile, userId float64) error
+	AddNewProfile(ctx context.Context, profile *Profile, userId float64) error
+	UpdateProfile(ctx context.Context, profile *Profile, userId float64) error
+	UpdatePicture(ctx context.Context, profile *Profile, userId float64) error
 }
 
 type UserStore interface {
+	GetEmailByID(ctx context.Context, id float64) (string, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	AddNewUser(ctx context.Context, user *User) (float64, error)
 	ChangePassword(ctx context.Context, user *User) error
+	CheckUserEmailExist(ctx context.Context, email string) (*User, error)
+	SafeDeleteUser(ctx context.Context, email string) error
 }
 
 type PasswordStore interface {
