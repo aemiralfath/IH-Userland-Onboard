@@ -83,3 +83,18 @@ func (s *SessionStore) EndSession(ctx context.Context, jti string) error {
 
 	return nil
 }
+
+func (s *SessionStore) DeleteOtherSession(ctx context.Context, jti string) error {
+	query := `DELETE from "session" WHERE "jti" != $1`
+	stmt, err := s.db.Prepare(query)
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.ExecContext(ctx, jti)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

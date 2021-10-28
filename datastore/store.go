@@ -55,6 +55,7 @@ type SessionStore interface {
 	GetUserSession(ctx context.Context, userId float64) ([]Session, error)
 	AddNewSession(ctx context.Context, session *Session, clientId float64) error
 	EndSession(ctx context.Context, jti string) error
+	DeleteOtherSession(ctx context.Context, jti string) error
 }
 
 type ClientStore interface {
