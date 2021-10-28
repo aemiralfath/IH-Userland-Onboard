@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
+	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/go-chi/render"
 )
@@ -17,7 +18,7 @@ type updateProfileRequest struct {
 	Web      string `json:"web"`
 }
 
-func UpdateProfile(jwtAuth helper.JWTAuth, profileStore datastore.ProfileStore) http.HandlerFunc {
+func UpdateProfile(jwtAuth jwt.JWTAuth, profileStore datastore.ProfileStore) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		req := &updateProfileRequest{}
@@ -27,7 +28,7 @@ func UpdateProfile(jwtAuth helper.JWTAuth, profileStore datastore.ProfileStore) 
 			return
 		}
 
-		_, claims, err := helper.FromContext(ctx)
+		_, claims, err := jwt.FromContext(ctx)
 		if err != nil {
 			fmt.Println(render.Render(rw, r, helper.BadRequestErrorRenderer(err)))
 			return

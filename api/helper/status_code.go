@@ -84,6 +84,6 @@ func InternalServerErrorRenderer(err error) *ErrorResponse {
 	return &ErrorResponse{
 		Err:        err,
 		StatusCode: 500,
-		Message:    err.Error(),
+		Message:    "Internal Server Error",
 	}
 }

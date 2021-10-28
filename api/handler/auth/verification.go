@@ -1,10 +1,12 @@
 package auth
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
 	"strings"
 
+	"github.com/aemiralfath/IH-Userland-Onboard/api/email"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/go-chi/render"
@@ -15,7 +17,7 @@ type verificationRequest struct {
 	Recipient string `json:"recipient"`
 }
 
-func Verification(email helper.Email, token datastore.TokenStore, userStore datastore.UserStore) http.HandlerFunc {
+func Verification(email email.Email, otp datastore.OTPStore, userStore datastore.UserStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
@@ -27,24 +29,29 @@ func Verification(email helper.Email, token datastore.TokenStore, userStore data
 
 		usr, err := userStore.CheckUserEmailExist(ctx, req.Recipient)
 		if err != nil {
-			render.Render(w, r, helper.BadRequestErrorRenderer(err))
-			return
+			if err == sql.ErrNoRows {
+				render.Render(w, r, helper.BadRequestErrorRenderer(fmt.Errorf("User not found")))
+				return
+			} else {
+				render.Render(w, r, helper.InternalServerErrorRenderer(err))
+				return
+			}
 		}
 
-		tokenCode, err := helper.GenerateOTP(6)
+		otpCode, err := helper.GenerateOTP(6)
 		if err != nil {
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
-		value := fmt.Sprintf("%f-%s", usr.ID, req.Recipient)
-		if err := token.SetToken(ctx, "user", value, tokenCode); err != nil {
+		otpValue := fmt.Sprintf("%f-%s", usr.ID, req.Recipient)
+		if err := otp.SetOTP(ctx, "user", otpCode, otpValue); err != nil {
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
 		subject := "Userland Email Verification!"
-		msg := fmt.Sprintf("Use this otp for verify your email: %s", tokenCode)
+		msg := fmt.Sprintf("Use this otp for verify your email: %s", otpCode)
 
 		go email.SendEmail(req.Recipient, subject, msg)
 

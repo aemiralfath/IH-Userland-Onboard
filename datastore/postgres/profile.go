@@ -27,7 +27,18 @@ func (s *ProfileStore) GetProfile(ctx context.Context, userId float64) (*datasto
 		return nil, err
 	}
 
-	err = stmt.QueryRowContext(ctx, userId).Scan(&prof.ID, &prof.UserId, &prof.Fullname, &prof.Location, &prof.Bio, &prof.Web, &prof.Picture, &prof.CreatedAt, &prof.UpdatedAt)
+	err = stmt.QueryRowContext(ctx, userId).Scan(
+		&prof.ID,
+		&prof.UserId,
+		&prof.Fullname,
+		&prof.Location,
+		&prof.Bio,
+		&prof.Web,
+		&prof.Picture,
+		&prof.CreatedAt,
+		&prof.UpdatedAt,
+	)
+
 	if err != nil {
 		return nil, err
 	}

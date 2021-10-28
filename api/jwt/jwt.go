@@ -1,4 +1,4 @@
-package helper
+package jwt
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
 	"github.com/lestrrat-go/jwx/jwa"
 	"github.com/lestrrat-go/jwx/jwt"
 )
@@ -136,7 +137,7 @@ func Authenticator(next http.Handler) http.Handler {
 }
 
 func (jwtAuth JWTAuth) CreateToken(userID float64, email string, minute int) (*Token, string, error) {
-	jti := GenerateRandomID()
+	jti := helper.GenerateRandomID()
 	expires_at := time.Now().Add(time.Duration(minute) * time.Minute)
 
 	accessTokenClaims := make(map[string]interface{})

@@ -7,14 +7,15 @@ import (
 	"os"
 
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
+	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/go-chi/render"
 )
 
-func SetPicture(jwtAuth helper.JWTAuth, profileStore datastore.ProfileStore) http.HandlerFunc {
+func SetPicture(jwtAuth jwt.JWTAuth, profileStore datastore.ProfileStore) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		_, claims, err := helper.FromContext(ctx)
+		_, claims, err := jwt.FromContext(ctx)
 		if err != nil {
 			fmt.Println(render.Render(rw, r, helper.BadRequestErrorRenderer(err)))
 			return
@@ -39,7 +40,7 @@ func SetPicture(jwtAuth helper.JWTAuth, profileStore datastore.ProfileStore) htt
 		}
 		defer file.Close()
 
-		fileName := fmt.Sprintf("/ih-userland-onboard/assets/profile/%f-%s", userId, handler.Filename)
+		fileName := fmt.Sprintf("%s/%f-%s", os.Getenv("PROFILE_PATH"), userId, handler.Filename)
 		localFile, err := os.Create(fileName)
 		if err != nil {
 			render.Render(rw, r, helper.BadRequestErrorRenderer(err))

@@ -1,20 +1,24 @@
 package me
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
 	"strings"
 
+	"github.com/aemiralfath/IH-Userland-Onboard/api/email"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
+	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/go-chi/render"
+	"github.com/rs/zerolog/log"
 )
 
 type changeEmailRequest struct {
 	Email string `json:"email"`
 }
 
-func ChangeEmail(jwtAuth helper.JWTAuth, email helper.Email, userStore datastore.UserStore, token datastore.TokenStore) http.HandlerFunc {
+func ChangeEmail(jwtAuth jwt.JWTAuth, email email.Email, userStore datastore.UserStore, otp datastore.OTPStore) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		req := &changeEmailRequest{}
@@ -24,33 +28,34 @@ func ChangeEmail(jwtAuth helper.JWTAuth, email helper.Email, userStore datastore
 			return
 		}
 
-		_, claims, err := helper.FromContext(ctx)
+		_, claims, err := jwt.FromContext(ctx)
 		if err != nil {
 			fmt.Println(render.Render(rw, r, helper.BadRequestErrorRenderer(err)))
 			return
 		}
 
-		usr, _ := userStore.CheckUserEmailExist(ctx, req.Email)
-		if usr != nil {
-			render.Render(rw, r, helper.BadRequestErrorRenderer(fmt.Errorf("Email already exist!")))
+		_, err = userStore.CheckUserEmailExist(ctx, req.Email)
+		if err != nil && err != sql.ErrNoRows {
+			log.Error().Err(err).Stack().Msg(err.Error())
+			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
-		tokenCode, err := helper.GenerateOTP(6)
+		otpCode, err := helper.GenerateOTP(6)
 		if err != nil {
 			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
 		userId := claims["userID"]
-		value := fmt.Sprintf("%f-%s", userId.(float64), req.Email)
-		if err := token.SetToken(ctx, "user", value, tokenCode); err != nil {
+		otpValue := fmt.Sprintf("%f-%s", userId.(float64), req.Email)
+		if err := otp.SetOTP(ctx, "user", otpCode, otpValue); err != nil {
 			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
 		subject := "Userland Change Email Verification!"
-		msg := fmt.Sprintf("Use this otp for verify your new email: %s", tokenCode)
+		msg := fmt.Sprintf("Use this otp for verify your new email: %s", otpCode)
 
 		go email.SendEmail(req.Email, subject, msg)
 

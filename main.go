@@ -5,7 +5,8 @@ import (
 	"time"
 
 	"github.com/aemiralfath/IH-Userland-Onboard/api"
-	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
+	"github.com/aemiralfath/IH-Userland-Onboard/api/email"
+	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog/log"
@@ -27,14 +28,14 @@ func main() {
 		ShutdownTimeout: 10 * time.Second,
 	}
 
-	emailCfg := helper.EmailConfig{
+	emailCfg := email.EmailConfig{
 		Host:     os.Getenv("SMTP_HOST"),
 		Port:     os.Getenv("SMTP_PORT"),
 		From:     os.Getenv("SMTP_FROM"),
 		Password: os.Getenv("SMTP_PASSWORD"),
 	}
 
-	jwtCfg := helper.JWTConfig{
+	jwtCfg := jwt.JWTConfig{
 		Alg:       os.Getenv("JWT_ALG"),
 		SignKey:   os.Getenv("JWT_SIGN"),
 		VerifyKey: nil,
@@ -74,8 +75,8 @@ func main() {
 	}
 
 	serverHelperSouce := &api.HelperSource{
-		Jwtauth: helper.New(jwtCfg),
-		Email:   helper.NewEmail(emailCfg),
+		Jwtauth: jwt.New(jwtCfg),
+		Email:   email.NewEmail(emailCfg),
 	}
 
 	log.Info().Msg("starting api server")

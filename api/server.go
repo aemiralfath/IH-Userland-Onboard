@@ -10,10 +10,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/aemiralfath/IH-Userland-Onboard/api/email"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/handler/auth"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/handler/me"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/handler/session"
-	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
+	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore/postgres"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore/redisdb"
@@ -36,8 +37,8 @@ type DataSource struct {
 }
 
 type HelperSource struct {
-	Jwtauth *helper.JWTAuth
-	Email   *helper.Email
+	Jwtauth *jwt.JWTAuth
+	Email   *email.Email
 }
 
 type serverStores struct {
@@ -46,7 +47,7 @@ type serverStores struct {
 	passwordStore datastore.PasswordStore
 	sessionStore  datastore.SessionStore
 	clientStore   datastore.ClientStore
-	tokenStore    datastore.TokenStore
+	otpStore      datastore.OTPStore
 }
 
 type Server struct {
@@ -70,7 +71,7 @@ func (s *Server) initStores() error {
 	passwordStore := postgres.NewPasswordStore(s.DataSource.PostgresDB)
 	sessionStore := postgres.NewSessionStore(s.DataSource.PostgresDB)
 	clientStore := postgres.NewClientStore(s.DataSource.PostgresDB)
-	tokenStore := redisdb.NewTokenStore(s.DataSource.RedisDB)
+	otpStore := redisdb.NewOTPStore(s.DataSource.RedisDB)
 
 	s.stores = &serverStores{
 		userStore:     userStore,
@@ -78,7 +79,7 @@ func (s *Server) initStores() error {
 		passwordStore: passwordStore,
 		sessionStore:  sessionStore,
 		clientStore:   clientStore,
-		tokenStore:    tokenStore,
+		otpStore:      otpStore,
 	}
 	return nil
 }
@@ -88,14 +89,14 @@ func (s *Server) createHandlers() http.Handler {
 	r := chi.NewRouter()
 
 	r.Group(func(r chi.Router) {
-		r.Use(helper.Verifier(s.helper.Jwtauth))
-		r.Use(helper.Authenticator)
+		r.Use(jwt.Verifier(s.helper.Jwtauth))
+		r.Use(jwt.Authenticator)
 		r.Route("/me", func(r chi.Router) {
 			r.Get("/", me.GetProfile(*s.helper.Jwtauth, s.stores.profileStore))
 			r.Post("/", me.UpdateProfile(*s.helper.Jwtauth, s.stores.profileStore))
 
 			r.Get("/email", me.GetEmail(*s.helper.Jwtauth, s.stores.userStore))
-			r.Post("/email", me.ChangeEmail(*s.helper.Jwtauth, *s.helper.Email, s.stores.userStore, s.stores.tokenStore))
+			r.Post("/email", me.ChangeEmail(*s.helper.Jwtauth, *s.helper.Email, s.stores.userStore, s.stores.otpStore))
 
 			r.Post("/picture", me.SetPicture(*s.helper.Jwtauth, s.stores.profileStore))
 			r.Delete("/picture", me.DeletePicture(*s.helper.Jwtauth, s.stores.profileStore))
@@ -118,13 +119,13 @@ func (s *Server) createHandlers() http.Handler {
 		})
 
 		r.Route("/auth", func(r chi.Router) {
-			r.Post("/register", auth.Register(*s.helper.Email, s.stores.userStore, s.stores.profileStore, s.stores.passwordStore, s.stores.tokenStore))
-			r.Post("/verification", auth.Verification(*s.helper.Email, s.stores.tokenStore, s.stores.userStore))
+			r.Post("/register", auth.Register(*s.helper.Email, s.stores.userStore, s.stores.profileStore, s.stores.passwordStore, s.stores.otpStore))
+			r.Post("/verification", auth.Verification(*s.helper.Email, s.stores.otpStore, s.stores.userStore))
 			r.Post("/login", auth.Login(*s.helper.Jwtauth, s.stores.userStore, s.stores.sessionStore, s.stores.clientStore))
 
 			r.Route("/password", func(r chi.Router) {
-				r.Post("/forgot", auth.ForgotPassword(*s.helper.Email, s.stores.userStore, s.stores.tokenStore))
-				r.Post("/reset", auth.ResetPassword(s.stores.userStore, s.stores.passwordStore, s.stores.tokenStore))
+				r.Post("/forgot", auth.ForgotPassword(*s.helper.Email, s.stores.userStore, s.stores.otpStore))
+				r.Post("/reset", auth.ResetPassword(s.stores.userStore, s.stores.passwordStore, s.stores.otpStore))
 			})
 		})
 	})

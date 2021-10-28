@@ -5,13 +5,14 @@ import (
 	"net/http"
 
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
+	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
 	"github.com/go-chi/render"
 )
 
-func GetAccessToken(jwtAuth helper.JWTAuth) http.HandlerFunc {
+func GetAccessToken(jwtAuth jwt.JWTAuth) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		_, claims, err := helper.FromContext(ctx)
+		_, claims, err := jwt.FromContext(ctx)
 		if err != nil {
 			fmt.Println(render.Render(rw, r, helper.BadRequestErrorRenderer(err)))
 			return
@@ -20,7 +21,7 @@ func GetAccessToken(jwtAuth helper.JWTAuth) http.HandlerFunc {
 		userId := claims["userID"]
 		userEmail := claims["email"]
 
-		accessToken, _, err := jwtAuth.CreateToken(userId.(float64), userEmail.(string), helper.AccessTokenExpiration)
+		accessToken, _, err := jwtAuth.CreateToken(userId.(float64), userEmail.(string), jwt.AccessTokenExpiration)
 		if err != nil {
 			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 			return

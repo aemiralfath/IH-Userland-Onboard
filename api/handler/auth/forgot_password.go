@@ -1,10 +1,12 @@
 package auth
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
 	"strings"
 
+	"github.com/aemiralfath/IH-Userland-Onboard/api/email"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/go-chi/render"
@@ -14,7 +16,7 @@ type forgotPasswordRequest struct {
 	Email string `json:"Email"`
 }
 
-func ForgotPassword(email helper.Email, userStore datastore.UserStore, token datastore.TokenStore) http.HandlerFunc {
+func ForgotPassword(email email.Email, userStore datastore.UserStore, otp datastore.OTPStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
@@ -25,30 +27,30 @@ func ForgotPassword(email helper.Email, userStore datastore.UserStore, token dat
 			return
 		}
 
-		usr, err := userStore.GetUserByEmail(ctx, req.Email)
-		if usr == nil {
-			render.Render(w, r, helper.BadRequestErrorRenderer(err))
-			return
-		}
-
+		_, err := userStore.GetUserByEmail(ctx, req.Email)
 		if err != nil {
-			fmt.Println(render.Render(w, r, helper.InternalServerErrorRenderer(err)))
-			return
+			if err == sql.ErrNoRows {
+				render.Render(w, r, helper.BadRequestErrorRenderer(fmt.Errorf("User not found")))
+				return
+			} else {
+				render.Render(w, r, helper.InternalServerErrorRenderer(err))
+				return
+			}
 		}
 
-		tokenCode, err := helper.GenerateOTP(6)
+		otpCode, err := helper.GenerateOTP(6)
 		if err != nil {
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
-		if err := token.SetToken(ctx, "password", req.Email, tokenCode); err != nil {
+		if err := otp.SetOTP(ctx, "password", otpCode, req.Email); err != nil {
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
 		subject := "Userland Reset Password!"
-		msg := fmt.Sprintf("Use this token for reset your password: %s", tokenCode)
+		msg := fmt.Sprintf("Use this otp for reset your password: %s", otpCode)
 
 		go email.SendEmail(req.Email, subject, msg)
 
