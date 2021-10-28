@@ -68,3 +68,18 @@ func (s *SessionStore) AddNewSession(ctx context.Context, session *datastore.Ses
 
 	return nil
 }
+
+func (s *SessionStore) EndSession(ctx context.Context, jti string) error {
+	query := `UPDATE "session" SET "is_current" = $1 WHERE "jti" = $2`
+	stmt, err := s.db.Prepare(query)
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.ExecContext(ctx, false, jti)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

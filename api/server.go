@@ -105,7 +105,8 @@ func (s *Server) createHandlers() http.Handler {
 			r.Post("/delete", me.DeleteAccount(*s.helper.Jwtauth, s.stores.userStore))
 
 			r.Route("/session", func(r chi.Router) {
-				r.Get("/", session.GetListSession(*s.helper.Jwtauth, s.stores.sessionStore, s.stores.clientStore))
+				r.Get("/", session.GetListSession(*s.helper.Jwtauth, s.stores.sessionStore))
+				r.Delete("/", session.EndCurrentSession(*s.helper.Jwtauth, s.stores.sessionStore))
 				r.Get("/refresh_token", session.GetRefreshToken(*s.helper.Jwtauth))
 				r.Get("/access_token", session.GetAccessToken(*s.helper.Jwtauth))
 			})
