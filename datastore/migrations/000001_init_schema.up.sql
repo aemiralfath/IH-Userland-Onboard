@@ -51,9 +51,9 @@ CREATE TABLE IF NOT EXISTS "session" (
   "user_id" BIGINT,
   "client_id" BIGINT,
   "is_current" BOOLEAN NOT NULL DEFAULT TRUE,
-  "event" VARCHAR(255),
-  "user_agent" TEXT,
-  "ip" TEXT,
+  "event" VARCHAR(255) NOT NULL DEFAULT '',
+  "user_agent" TEXT NOT NULL DEFAULT '',
+  "ip" TEXT NOT NULL DEFAULT '',
   "created_at" timestamptz NOT NULL DEFAULT (now()),
   "updated_at" timestamptz NOT NULL DEFAULT (now())
 );

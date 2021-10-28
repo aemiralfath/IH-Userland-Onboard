@@ -41,6 +41,7 @@ type Session struct {
 	Event     string  `json:"event"`
 	UserAgent string  `json:"userAgent"`
 	IP        string  `json:"ip"`
+	Client    Client  `json:"client"`
 	CreatedAt string  `json:"createdAt"`
 	UpdatedAt string  `json:"updatedAt"`
 }
@@ -51,7 +52,7 @@ type Client struct {
 }
 
 type SessionStore interface {
-	GetUserSession(ctx context.Context, userId float64) (*Session, error)
+	GetUserSession(ctx context.Context, userId float64) ([]Session, error)
 	AddNewSession(ctx context.Context, session *Session, clientId float64) error
 }
 
