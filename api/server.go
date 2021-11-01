@@ -16,6 +16,7 @@ import (
 	"github.com/aemiralfath/IH-Userland-Onboard/api/handler/session"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
+	"github.com/aemiralfath/IH-Userland-Onboard/datastore/crypto"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore/postgres"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore/redisdb"
 	"github.com/go-chi/chi"
@@ -48,6 +49,7 @@ type serverStores struct {
 	sessionStore  datastore.SessionStore
 	clientStore   datastore.ClientStore
 	otpStore      datastore.OTPStore
+	crypto        datastore.Crypto
 }
 
 type Server struct {
@@ -72,6 +74,7 @@ func (s *Server) initStores() error {
 	sessionStore := postgres.NewSessionStore(s.DataSource.PostgresDB)
 	clientStore := postgres.NewClientStore(s.DataSource.PostgresDB)
 	otpStore := redisdb.NewOTPStore(s.DataSource.RedisDB)
+	crypto := crypto.NewAppCrypto()
 
 	s.stores = &serverStores{
 		userStore:     userStore,
@@ -80,6 +83,7 @@ func (s *Server) initStores() error {
 		sessionStore:  sessionStore,
 		clientStore:   clientStore,
 		otpStore:      otpStore,
+		crypto:        crypto,
 	}
 	return nil
 }
@@ -101,8 +105,8 @@ func (s *Server) createHandlers() http.Handler {
 			r.Post("/picture", me.SetPicture(*s.helper.Jwtauth, s.stores.profileStore))
 			r.Delete("/picture", me.DeletePicture(*s.helper.Jwtauth, s.stores.profileStore))
 
-			r.Post("/password", me.ChangePassword(*s.helper.Jwtauth, s.stores.userStore, s.stores.passwordStore))
-			r.Post("/delete", me.DeleteAccount(*s.helper.Jwtauth, s.stores.userStore))
+			r.Post("/password", me.ChangePassword(*s.helper.Jwtauth, s.stores.crypto, s.stores.userStore, s.stores.passwordStore))
+			r.Post("/delete", me.DeleteAccount(*s.helper.Jwtauth, s.stores.crypto, s.stores.userStore))
 
 			r.Route("/session", func(r chi.Router) {
 				r.Get("/", session.GetListSession(*s.helper.Jwtauth, s.stores.sessionStore))
@@ -121,13 +125,13 @@ func (s *Server) createHandlers() http.Handler {
 		})
 
 		r.Route("/auth", func(r chi.Router) {
-			r.Post("/register", auth.Register(*s.helper.Email, s.stores.userStore, s.stores.profileStore, s.stores.passwordStore, s.stores.otpStore))
+			r.Post("/register", auth.Register(*s.helper.Email, s.stores.crypto, s.stores.userStore, s.stores.profileStore, s.stores.passwordStore, s.stores.otpStore))
 			r.Post("/verification", auth.Verification(*s.helper.Email, s.stores.otpStore, s.stores.userStore))
-			r.Post("/login", auth.Login(*s.helper.Jwtauth, s.stores.userStore, s.stores.sessionStore, s.stores.clientStore))
+			r.Post("/login", auth.Login(*s.helper.Jwtauth, s.stores.crypto, s.stores.userStore, s.stores.sessionStore, s.stores.clientStore))
 
 			r.Route("/password", func(r chi.Router) {
 				r.Post("/forgot", auth.ForgotPassword(*s.helper.Email, s.stores.userStore, s.stores.otpStore))
-				r.Post("/reset", auth.ResetPassword(s.stores.userStore, s.stores.passwordStore, s.stores.otpStore))
+				r.Post("/reset", auth.ResetPassword(s.stores.crypto, s.stores.userStore, s.stores.passwordStore, s.stores.otpStore))
 			})
 		})
 	})

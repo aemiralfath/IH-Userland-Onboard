@@ -19,7 +19,7 @@ type changePasswordRequest struct {
 	PasswordConfirm string `json:"password_confirm"`
 }
 
-func ChangePassword(jwtAuth jwt.JWTAuth, userStore datastore.UserStore, passwordStore datastore.PasswordStore) http.HandlerFunc {
+func ChangePassword(jwtAuth jwt.JWTAuth, crypto datastore.Crypto, userStore datastore.UserStore, passwordStore datastore.PasswordStore) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		req := &changePasswordRequest{}
@@ -47,8 +47,8 @@ func ChangePassword(jwtAuth jwt.JWTAuth, userStore datastore.UserStore, password
 			}
 		}
 
-		if err := helper.ConfirmPassword(usr.Password, req.PasswordCurrent); err != nil {
-			render.Render(rw, r, helper.BadRequestErrorRenderer(err))
+		if err := crypto.ConfirmPassword(usr.Password, req.PasswordCurrent); !err {
+			render.Render(rw, r, helper.BadRequestErrorRenderer(fmt.Errorf("Wrong Password")))
 			return
 		}
 
@@ -58,34 +58,28 @@ func ChangePassword(jwtAuth jwt.JWTAuth, userStore datastore.UserStore, password
 			return
 		}
 
-		diffPassword := 0
 		for _, e := range lastThreePassword {
-			if err := helper.ConfirmPassword(e, req.Password); err != nil {
-				diffPassword += 1
+			if err := crypto.ConfirmPassword(e, req.Password); err {
+				render.Render(rw, r, helper.BadRequestErrorRenderer(fmt.Errorf("Password must different from last 3 password")))
+				return
 			}
 		}
 
-		if diffPassword == len(lastThreePassword) {
+		if err := updateStore(ctx, crypto, req, usr, userStore, passwordStore); err != nil {
+			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
+			return
+		}
 
-			if err := updateStore(ctx, req, usr, userStore, passwordStore); err != nil {
-				render.Render(rw, r, helper.InternalServerErrorRenderer(err))
-				return
-			}
-
-			if err := render.Render(rw, r, helper.SuccesRenderer()); err != nil {
-				render.Render(rw, r, helper.InternalServerErrorRenderer(err))
-				return
-			}
-		} else {
-			render.Render(rw, r, helper.BadRequestErrorRenderer(fmt.Errorf("Password must different from last 3 password")))
+		if err := render.Render(rw, r, helper.SuccesRenderer()); err != nil {
+			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
 	}
 }
 
-func updateStore(ctx context.Context, req *changePasswordRequest, usr *datastore.User, userStore datastore.UserStore, passwordStore datastore.PasswordStore) error {
-	hashPassword, err := helper.HashPassword(req.Password)
+func updateStore(ctx context.Context, crypto datastore.Crypto, req *changePasswordRequest, usr *datastore.User, userStore datastore.UserStore, passwordStore datastore.PasswordStore) error {
+	hashPassword, err := crypto.HashPassword(req.Password)
 	if err != nil {
 		return err
 	}

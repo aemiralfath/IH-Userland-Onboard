@@ -22,7 +22,7 @@ type loginResponse struct {
 	AccessToken *jwt.Token `json:"access_token"`
 }
 
-func Login(jwtAuth jwt.JWTAuth, userStore datastore.UserStore, sessionStore datastore.SessionStore, clientStore datastore.ClientStore) http.HandlerFunc {
+func Login(jwtAuth jwt.JWTAuth, crypto datastore.Crypto, userStore datastore.UserStore, sessionStore datastore.SessionStore, clientStore datastore.ClientStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
@@ -45,8 +45,8 @@ func Login(jwtAuth jwt.JWTAuth, userStore datastore.UserStore, sessionStore data
 			}
 		}
 
-		if err := helper.ConfirmPassword(usr.Password, req.Password); err != nil {
-			render.Render(w, r, helper.BadRequestErrorRenderer(err))
+		if err := crypto.ConfirmPassword(usr.Password, req.Password); !err {
+			render.Render(w, r, helper.BadRequestErrorRenderer(fmt.Errorf("Wrong Password")))
 			return
 		}
 

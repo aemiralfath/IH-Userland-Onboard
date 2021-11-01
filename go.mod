@@ -40,5 +40,6 @@ require github.com/thanhpk/randstr v1.0.4
 
 require (
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.0-20210816181553-5444fa50b93d // indirect
+	github.com/golang/mock v1.6.0 // indirect
 	github.com/lestrrat-go/blackmagic v1.0.0 // indirect
 )

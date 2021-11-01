@@ -20,7 +20,7 @@ type registerRequest struct {
 	PasswordConfirm string `json:"password_confirm"`
 }
 
-func Register(email email.Email, userStore datastore.UserStore, profileStore datastore.ProfileStore, passwordStore datastore.PasswordStore, otp datastore.OTPStore) http.HandlerFunc {
+func Register(email email.Email, crypto datastore.Crypto, userStore datastore.UserStore, profileStore datastore.ProfileStore, passwordStore datastore.PasswordStore, otp datastore.OTPStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
@@ -41,14 +41,14 @@ func Register(email email.Email, userStore datastore.UserStore, profileStore dat
 			return
 		}
 
-		hashPassword, err := helper.HashPassword(req.Password)
+		hashPassword, err := crypto.HashPassword(req.Password)
 		if err != nil {
 			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
-		req.Password = string(hashPassword)
+		req.Password = hashPassword
 		userId, err := userStore.AddNewUser(ctx, parseRegisterRequestUser(req))
 		if err != nil {
 			log.Error().Err(err).Stack().Msg(err.Error())

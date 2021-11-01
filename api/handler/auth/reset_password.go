@@ -18,7 +18,7 @@ type resetPasswordRequest struct {
 	PasswordConfirm string `json:"password_confirm"`
 }
 
-func ResetPassword(userStore datastore.UserStore, passwordStore datastore.PasswordStore, otp datastore.OTPStore) http.HandlerFunc {
+func ResetPassword(crypto datastore.Crypto, userStore datastore.UserStore, passwordStore datastore.PasswordStore, otp datastore.OTPStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
@@ -53,13 +53,13 @@ func ResetPassword(userStore datastore.UserStore, passwordStore datastore.Passwo
 		}
 
 		for _, e := range lastThreePassword {
-			if err := helper.ConfirmPassword(e, req.Password); err == nil {
+			if err := crypto.ConfirmPassword(e, req.Password); err {
 				render.Render(w, r, helper.BadRequestErrorRenderer(fmt.Errorf("Password must different from last 3 password")))
 				return
 			}
 		}
 
-		if err := updateStore(ctx, req, usr, userStore, passwordStore); err != nil {
+		if err := updateStore(ctx, crypto, req, usr, userStore, passwordStore); err != nil {
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
@@ -74,12 +74,13 @@ func ResetPassword(userStore datastore.UserStore, passwordStore datastore.Passwo
 
 func updateStore(
 	ctx context.Context,
-	req *resetPasswordRequest, 
-	usr *datastore.User, 
-	userStore datastore.UserStore, 
+	crypto datastore.Crypto,
+	req *resetPasswordRequest,
+	usr *datastore.User,
+	userStore datastore.UserStore,
 	passwordStore datastore.PasswordStore) error {
 
-	hashPassword, err := helper.HashPassword(req.Password)
+	hashPassword, err := crypto.HashPassword(req.Password)
 	if err != nil {
 		return err
 	}
@@ -89,7 +90,7 @@ func updateStore(
 		return err
 	}
 
-	req.Password = string(hashPassword)
+	req.Password = hashPassword
 	if err := passwordStore.AddNewPassword(ctx, parseResetRequestPassword(req), usr.ID); err != nil {
 		return err
 	}

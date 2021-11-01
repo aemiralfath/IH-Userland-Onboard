@@ -5,7 +5,6 @@ import (
 	"unicode"
 
 	"github.com/thanhpk/randstr"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func VerifyPassword(s string) (eightOrMore, number, upper bool) {
@@ -24,14 +23,6 @@ func VerifyPassword(s string) (eightOrMore, number, upper bool) {
 	}
 	eightOrMore = letters >= 8
 	return
-}
-
-func HashPassword(password string) ([]byte, error) {
-	return bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-}
-
-func ConfirmPassword(hashedPassword, password string) error {
-	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 }
 
 func GenerateOTP(length int) (string, error) {

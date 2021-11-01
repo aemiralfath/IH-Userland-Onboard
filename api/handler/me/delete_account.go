@@ -16,7 +16,7 @@ type deleteAccountRequest struct {
 	Password string `json:"password"`
 }
 
-func DeleteAccount(jwtAuth jwt.JWTAuth, userStore datastore.UserStore) http.HandlerFunc {
+func DeleteAccount(jwtAuth jwt.JWTAuth, crypto datastore.Crypto, userStore datastore.UserStore) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		req := &deleteAccountRequest{}
@@ -44,8 +44,8 @@ func DeleteAccount(jwtAuth jwt.JWTAuth, userStore datastore.UserStore) http.Hand
 			}
 		}
 
-		if err := helper.ConfirmPassword(usr.Password, req.Password); err != nil {
-			render.Render(rw, r, helper.BadRequestErrorRenderer(err))
+		if err := crypto.ConfirmPassword(usr.Password, req.Password); !err {
+			render.Render(rw, r, helper.BadRequestErrorRenderer(fmt.Errorf("Wrong Password")))
 			return
 		}
 
