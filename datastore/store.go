@@ -92,4 +92,5 @@ type OTPStore interface {
 type Crypto interface {
 	HashPassword(password string) (string, error)
 	ConfirmPassword(hashedPassword, password string) bool
+	GenerateOTP(length int) (string, error)
 }

@@ -53,13 +53,18 @@ func TestRegister(t *testing.T) {
 
 	passwordStore := mock_datastore.NewMockPasswordStore(ctrl)
 	passwordStore.EXPECT().
-		AddNewPassword(gomock.Any(), &datastore.Password{Password: "Test1234"}, user.ID).
+		AddNewPassword(gomock.Any(), &datastore.Password{Password: hashPassword}, user.ID).
 		Times(1).
 		Return(nil)
 
+	cryptoMock.EXPECT().
+		GenerateOTP(gomock.Eq(6)).
+		Times(1).
+		Return("123456", nil)
+
 	otpStore := mock_datastore.NewMockOTPStore(ctrl)
 	otpStore.EXPECT().
-		SetOTP(gomock.Any(), "user", "123456", user.Email).
+		SetOTP(gomock.Any(), "user", "123456", fmt.Sprintf("%f-%s", float64(user.ID), user.Email)).
 		Times(1).
 		Return(nil)
 
@@ -79,7 +84,7 @@ func TestRegister(t *testing.T) {
 		"password_confirm": "Test1234",
 	})
 
-	handler := auth.Register(*email, cryptoService, userStore, profileStore, passwordStore, otpStore)
+	handler := auth.Register(*email, cryptoMock, userStore, profileStore, passwordStore, otpStore)
 	handler(w, r)
 
 	result := w.GetBodyJSON()

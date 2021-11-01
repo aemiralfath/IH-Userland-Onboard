@@ -17,7 +17,7 @@ type verificationRequest struct {
 	Recipient string `json:"recipient"`
 }
 
-func Verification(email email.Email, otp datastore.OTPStore, userStore datastore.UserStore) http.HandlerFunc {
+func Verification(email email.Email, crypto datastore.Crypto, otp datastore.OTPStore, userStore datastore.UserStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
@@ -38,7 +38,7 @@ func Verification(email email.Email, otp datastore.OTPStore, userStore datastore
 			}
 		}
 
-		otpCode, err := helper.GenerateOTP(6)
+		otpCode, err := crypto.GenerateOTP(6)
 		if err != nil {
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return

@@ -68,7 +68,7 @@ func Register(email email.Email, crypto datastore.Crypto, userStore datastore.Us
 			return
 		}
 
-		otpCode, err := helper.GenerateOTP(6)
+		otpCode, err := crypto.GenerateOTP(6)
 		if err != nil {
 			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))

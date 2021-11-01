@@ -100,7 +100,7 @@ func (s *Server) createHandlers() http.Handler {
 			r.Post("/", me.UpdateProfile(*s.helper.Jwtauth, s.stores.profileStore))
 
 			r.Get("/email", me.GetEmail(*s.helper.Jwtauth, s.stores.userStore))
-			r.Post("/email", me.ChangeEmail(*s.helper.Jwtauth, *s.helper.Email, s.stores.userStore, s.stores.otpStore))
+			r.Post("/email", me.ChangeEmail(*s.helper.Jwtauth, s.stores.crypto, *s.helper.Email, s.stores.userStore, s.stores.otpStore))
 
 			r.Post("/picture", me.SetPicture(*s.helper.Jwtauth, s.stores.profileStore))
 			r.Delete("/picture", me.DeletePicture(*s.helper.Jwtauth, s.stores.profileStore))
@@ -126,11 +126,11 @@ func (s *Server) createHandlers() http.Handler {
 
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/register", auth.Register(*s.helper.Email, s.stores.crypto, s.stores.userStore, s.stores.profileStore, s.stores.passwordStore, s.stores.otpStore))
-			r.Post("/verification", auth.Verification(*s.helper.Email, s.stores.otpStore, s.stores.userStore))
+			r.Post("/verification", auth.Verification(*s.helper.Email, s.stores.crypto, s.stores.otpStore, s.stores.userStore))
 			r.Post("/login", auth.Login(*s.helper.Jwtauth, s.stores.crypto, s.stores.userStore, s.stores.sessionStore, s.stores.clientStore))
 
 			r.Route("/password", func(r chi.Router) {
-				r.Post("/forgot", auth.ForgotPassword(*s.helper.Email, s.stores.userStore, s.stores.otpStore))
+				r.Post("/forgot", auth.ForgotPassword(*s.helper.Email, s.stores.crypto, s.stores.userStore, s.stores.otpStore))
 				r.Post("/reset", auth.ResetPassword(s.stores.crypto, s.stores.userStore, s.stores.passwordStore, s.stores.otpStore))
 			})
 		})

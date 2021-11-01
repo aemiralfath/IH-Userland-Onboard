@@ -46,6 +46,21 @@ func (mr *MockCryptoMockRecorder) ConfirmPassword(arg0, arg1 interface{}) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConfirmPassword", reflect.TypeOf((*MockCrypto)(nil).ConfirmPassword), arg0, arg1)
 }
 
+// GenerateOTP mocks base method
+func (m *MockCrypto) GenerateOTP(arg0 int) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GenerateOTP", arg0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GenerateOTP indicates an expected call of GenerateOTP
+func (mr *MockCryptoMockRecorder) GenerateOTP(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateOTP", reflect.TypeOf((*MockCrypto)(nil).GenerateOTP), arg0)
+}
+
 // HashPassword mocks base method
 func (m *MockCrypto) HashPassword(arg0 string) (string, error) {
 	m.ctrl.T.Helper()

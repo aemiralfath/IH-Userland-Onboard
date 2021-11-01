@@ -1,7 +1,6 @@
 package helper
 
 import (
-	"crypto/rand"
 	"unicode"
 
 	"github.com/thanhpk/randstr"
@@ -23,22 +22,6 @@ func VerifyPassword(s string) (eightOrMore, number, upper bool) {
 	}
 	eightOrMore = letters >= 8
 	return
-}
-
-func GenerateOTP(length int) (string, error) {
-	otpChars := "1234567890"
-	buffer := make([]byte, length)
-	_, err := rand.Read(buffer)
-	if err != nil {
-		return "", err
-	}
-
-	otpCharsLength := len(otpChars)
-	for i := 0; i < length; i++ {
-		buffer[i] = otpChars[int(buffer[i])%otpCharsLength]
-	}
-
-	return string(buffer), nil
 }
 
 func GenerateRandomID() string {

@@ -16,7 +16,7 @@ type forgotPasswordRequest struct {
 	Email string `json:"Email"`
 }
 
-func ForgotPassword(email email.Email, userStore datastore.UserStore, otp datastore.OTPStore) http.HandlerFunc {
+func ForgotPassword(email email.Email, crypto datastore.Crypto, userStore datastore.UserStore, otp datastore.OTPStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
@@ -38,7 +38,7 @@ func ForgotPassword(email email.Email, userStore datastore.UserStore, otp datast
 			}
 		}
 
-		otpCode, err := helper.GenerateOTP(6)
+		otpCode, err := crypto.GenerateOTP(6)
 		if err != nil {
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
