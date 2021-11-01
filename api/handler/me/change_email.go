@@ -39,6 +39,9 @@ func ChangeEmail(jwtAuth jwt.JWTAuth, email email.Email, userStore datastore.Use
 			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 			return
+		} else if err == nil {
+			fmt.Println(render.Render(rw, r, helper.BadRequestErrorRenderer(fmt.Errorf("Email already used"))))
+			return
 		}
 
 		otpCode, err := helper.GenerateOTP(6)

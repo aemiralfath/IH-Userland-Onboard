@@ -36,6 +36,9 @@ func Register(email email.Email, userStore datastore.UserStore, profileStore dat
 			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
+		} else if err == nil {
+			fmt.Println(render.Render(w, r, helper.BadRequestErrorRenderer(fmt.Errorf("Email already used"))))
+			return
 		}
 
 		hashPassword, err := helper.HashPassword(req.Password)
