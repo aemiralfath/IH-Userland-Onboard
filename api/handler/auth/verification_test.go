@@ -1,12 +1,10 @@
 package auth_test
 
 import (
-	"database/sql"
 	"fmt"
 	"net/http"
 	"testing"
 
-	"github.com/aemiralfath/IH-Userland-Onboard/api/crypto"
 	mock_crypto "github.com/aemiralfath/IH-Userland-Onboard/api/crypto/mock"
 	mock_email "github.com/aemiralfath/IH-Userland-Onboard/api/email/mock"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/handler/auth"
@@ -16,7 +14,7 @@ import (
 	"github.com/golang/mock/gomock"
 )
 
-func TestRegister(t *testing.T) {
+func TestVerification(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -24,54 +22,24 @@ func TestRegister(t *testing.T) {
 	headers.Add("content-type", "application/json")
 	headers.Add("X-Api-ClientID", "postman")
 
-	request := auth.RegisterRequest{
-		Fullname:        "Account Fullname",
-		Email:           "account@example.com",
-		Password:        "-/P4s5w0Rd_!?-WhaT#v#r",
-		PasswordConfirm: "-/P4s5w0Rd_!?-WhaT#v#r",
+	request := auth.VerificationRequest{
+		Type:      "email.verify",
+		Recipient: "account@example.com",
 	}
 
 	user := &datastore.User{
-		ID:       0,
-		Email:    "account@example.com",
-		Password: "-/P4s5w0Rd_!?-WhaT#v#r",
+		ID:    0,
+		Email: "account@example.com",
 	}
 
 	userStore := mock_datastore.NewMockUserStore(ctrl)
 	userStore.EXPECT().
-		CheckUserEmailExist(gomock.Any(), gomock.Eq(user.Email)).
+		CheckUserEmailExist(gomock.Any(), gomock.Eq(request.Recipient)).
 		Times(1).
-		Return(nil, sql.ErrNoRows)
-
-	cryptoService := &crypto.AppCrypto{}
-	hashPassword, _ := cryptoService.HashPassword(user.Password)
-
-	cryptoMock := mock_crypto.NewMockCrypto(ctrl)
-	cryptoMock.EXPECT().
-		HashPassword(gomock.Eq(user.Password)).
-		Times(1).
-		Return(hashPassword, nil)
-
-	user.Password = hashPassword
-
-	userStore.EXPECT().
-		AddNewUser(gomock.Any(), gomock.Eq(user)).
-		Times(1).
-		Return(user.ID, nil)
-
-	profileStore := mock_datastore.NewMockProfileStore(ctrl)
-	profileStore.EXPECT().
-		AddNewProfile(gomock.Any(), &datastore.Profile{Fullname: request.Fullname}, user.ID).
-		Times(1).
-		Return(nil)
-
-	passwordStore := mock_datastore.NewMockPasswordStore(ctrl)
-	passwordStore.EXPECT().
-		AddNewPassword(gomock.Any(), &datastore.Password{Password: hashPassword}, user.ID).
-		Times(1).
-		Return(nil)
+		Return(user, nil)
 
 	otpCode := "123456"
+	cryptoMock := mock_crypto.NewMockCrypto(ctrl)
 	cryptoMock.EXPECT().
 		GenerateOTP(gomock.Eq(6)).
 		Times(1).
@@ -93,17 +61,16 @@ func TestRegister(t *testing.T) {
 
 	r.Body = helper.RequestBody(request)
 
-	handler := auth.Register(
+	handler := auth.Verification(
 		emailMock,
 		cryptoMock,
-		userStore,
-		profileStore,
-		passwordStore,
-		otpStore)
+		otpStore,
+		userStore)
 
 	handler(w, r)
 
 	result := w.GetBodyJSON()
+	fmt.Println()
 
 	if result["success"] != true {
 		t.Errorf("handler not success")

@@ -88,9 +88,3 @@ type OTPStore interface {
 	SetOTP(ctx context.Context, otpType, otpCode, otpValue string) error
 	GetOTP(ctx context.Context, otpType, otpCode string) (string, error)
 }
-
-type Crypto interface {
-	HashPassword(password string) (string, error)
-	ConfirmPassword(hashedPassword, password string) bool
-	GenerateOTP(length int) (string, error)
-}

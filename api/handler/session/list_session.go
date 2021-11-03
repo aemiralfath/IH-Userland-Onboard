@@ -28,7 +28,7 @@ type listSessionResponse struct {
 	Data []sessionResponse `json:"data"`
 }
 
-func GetListSession(jwtAuth jwt.JWTAuth, sessionStore datastore.SessionStore) http.HandlerFunc {
+func GetListSession(jwtAuth jwt.JWT, sessionStore datastore.SessionStore) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		_, claims, err := jwt.FromContext(ctx)

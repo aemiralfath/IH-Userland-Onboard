@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/aemiralfath/IH-Userland-Onboard/api/crypto"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/email"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
@@ -18,7 +19,7 @@ type changeEmailRequest struct {
 	Email string `json:"email"`
 }
 
-func ChangeEmail(jwtAuth jwt.JWTAuth, crypto datastore.Crypto, email email.Email, userStore datastore.UserStore, otp datastore.OTPStore) http.HandlerFunc {
+func ChangeEmail(jwtAuth jwt.JWT, crypto crypto.Crypto, email email.Email, userStore datastore.UserStore, otp datastore.OTPStore) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		req := &changeEmailRequest{}

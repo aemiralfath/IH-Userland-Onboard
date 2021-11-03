@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/aemiralfath/IH-Userland-Onboard/api/crypto"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/email"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
@@ -16,7 +17,7 @@ type forgotPasswordRequest struct {
 	Email string `json:"Email"`
 }
 
-func ForgotPassword(email email.Email, crypto datastore.Crypto, userStore datastore.UserStore, otp datastore.OTPStore) http.HandlerFunc {
+func ForgotPassword(email email.Email, crypto crypto.Crypto, userStore datastore.UserStore, otp datastore.OTPStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()

@@ -3,14 +3,19 @@ package crypto
 import (
 	"crypto/rand"
 
-	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"golang.org/x/crypto/bcrypt"
 )
+
+type Crypto interface {
+	HashPassword(password string) (string, error)
+	ConfirmPassword(hashedPassword, password string) bool
+	GenerateOTP(length int) (string, error)
+}
 
 type AppCrypto struct {
 }
 
-func NewAppCrypto() datastore.Crypto {
+func NewAppCrypto() Crypto {
 	return &AppCrypto{}
 }
 

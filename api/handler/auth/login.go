@@ -6,13 +6,14 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/aemiralfath/IH-Userland-Onboard/api/crypto"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/go-chi/render"
 )
 
-type loginRequest struct {
+type LoginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
@@ -22,11 +23,11 @@ type loginResponse struct {
 	AccessToken *jwt.Token `json:"access_token"`
 }
 
-func Login(jwtAuth jwt.JWTAuth, crypto datastore.Crypto, userStore datastore.UserStore, sessionStore datastore.SessionStore, clientStore datastore.ClientStore) http.HandlerFunc {
+func Login(jwtAuth jwt.JWT, crypto crypto.Crypto, userStore datastore.UserStore, sessionStore datastore.SessionStore, clientStore datastore.ClientStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
-		req := &loginRequest{}
+		req := &LoginRequest{}
 		clientName := r.Header.Get("X-API-ClientID")
 
 		if err := render.Bind(r, req); err != nil {
@@ -74,7 +75,7 @@ func Login(jwtAuth jwt.JWTAuth, crypto datastore.Crypto, userStore datastore.Use
 	}
 }
 
-func (login *loginRequest) Bind(r *http.Request) error {
+func (login *LoginRequest) Bind(r *http.Request) error {
 	if strings.TrimSpace(login.Email) == "" {
 		return fmt.Errorf("required email")
 	}
@@ -86,4 +87,4 @@ func (login *loginRequest) Bind(r *http.Request) error {
 	return nil
 }
 
-func (*loginRequest) Render(w http.ResponseWriter, r *http.Request) {}
+func (*LoginRequest) Render(w http.ResponseWriter, r *http.Request) {}

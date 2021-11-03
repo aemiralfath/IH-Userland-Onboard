@@ -10,13 +10,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/aemiralfath/IH-Userland-Onboard/api/crypto"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/email"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/handler/auth"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/handler/me"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/handler/session"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
-	"github.com/aemiralfath/IH-Userland-Onboard/datastore/crypto"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore/postgres"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore/redisdb"
 	"github.com/go-chi/chi"
@@ -38,8 +38,9 @@ type DataSource struct {
 }
 
 type HelperSource struct {
-	Jwtauth *jwt.JWTAuth
-	Email   *email.Email
+	Jwtauth jwt.JWT
+	Email   email.Email
+	Crypto  crypto.Crypto
 }
 
 type serverStores struct {
@@ -49,7 +50,6 @@ type serverStores struct {
 	sessionStore  datastore.SessionStore
 	clientStore   datastore.ClientStore
 	otpStore      datastore.OTPStore
-	crypto        datastore.Crypto
 }
 
 type Server struct {
@@ -74,7 +74,6 @@ func (s *Server) initStores() error {
 	sessionStore := postgres.NewSessionStore(s.DataSource.PostgresDB)
 	clientStore := postgres.NewClientStore(s.DataSource.PostgresDB)
 	otpStore := redisdb.NewOTPStore(s.DataSource.RedisDB)
-	crypto := crypto.NewAppCrypto()
 
 	s.stores = &serverStores{
 		userStore:     userStore,
@@ -83,7 +82,6 @@ func (s *Server) initStores() error {
 		sessionStore:  sessionStore,
 		clientStore:   clientStore,
 		otpStore:      otpStore,
-		crypto:        crypto,
 	}
 	return nil
 }
@@ -93,27 +91,27 @@ func (s *Server) createHandlers() http.Handler {
 	r := chi.NewRouter()
 
 	r.Group(func(r chi.Router) {
-		r.Use(jwt.Verifier(s.helper.Jwtauth))
+		r.Use(s.helper.Jwtauth.Verifier())
 		r.Use(jwt.Authenticator)
 		r.Route("/me", func(r chi.Router) {
-			r.Get("/", me.GetProfile(*s.helper.Jwtauth, s.stores.profileStore))
-			r.Post("/", me.UpdateProfile(*s.helper.Jwtauth, s.stores.profileStore))
+			r.Get("/", me.GetProfile(s.helper.Jwtauth, s.stores.profileStore))
+			r.Post("/", me.UpdateProfile(s.helper.Jwtauth, s.stores.profileStore))
 
-			r.Get("/email", me.GetEmail(*s.helper.Jwtauth, s.stores.userStore))
-			r.Post("/email", me.ChangeEmail(*s.helper.Jwtauth, s.stores.crypto, *s.helper.Email, s.stores.userStore, s.stores.otpStore))
+			r.Get("/email", me.GetEmail(s.helper.Jwtauth, s.stores.userStore))
+			r.Post("/email", me.ChangeEmail(s.helper.Jwtauth, s.helper.Crypto, s.helper.Email, s.stores.userStore, s.stores.otpStore))
 
-			r.Post("/picture", me.SetPicture(*s.helper.Jwtauth, s.stores.profileStore))
-			r.Delete("/picture", me.DeletePicture(*s.helper.Jwtauth, s.stores.profileStore))
+			r.Post("/picture", me.SetPicture(s.helper.Jwtauth, s.stores.profileStore))
+			r.Delete("/picture", me.DeletePicture(s.helper.Jwtauth, s.stores.profileStore))
 
-			r.Post("/password", me.ChangePassword(*s.helper.Jwtauth, s.stores.crypto, s.stores.userStore, s.stores.passwordStore))
-			r.Post("/delete", me.DeleteAccount(*s.helper.Jwtauth, s.stores.crypto, s.stores.userStore))
+			r.Post("/password", me.ChangePassword(s.helper.Jwtauth, s.helper.Crypto, s.stores.userStore, s.stores.passwordStore))
+			r.Post("/delete", me.DeleteAccount(s.helper.Jwtauth, s.helper.Crypto, s.stores.userStore))
 
 			r.Route("/session", func(r chi.Router) {
-				r.Get("/", session.GetListSession(*s.helper.Jwtauth, s.stores.sessionStore))
-				r.Delete("/", session.EndCurrentSession(*s.helper.Jwtauth, s.stores.sessionStore))
-				r.Delete("/other", session.DeleteOtherSession(*s.helper.Jwtauth, s.stores.sessionStore))
-				r.Get("/refresh_token", session.GetRefreshToken(*s.helper.Jwtauth))
-				r.Get("/access_token", session.GetAccessToken(*s.helper.Jwtauth))
+				r.Get("/", session.GetListSession(s.helper.Jwtauth, s.stores.sessionStore))
+				r.Delete("/", session.EndCurrentSession(s.helper.Jwtauth, s.stores.sessionStore))
+				r.Delete("/other", session.DeleteOtherSession(s.helper.Jwtauth, s.stores.sessionStore))
+				r.Get("/refresh_token", session.GetRefreshToken(s.helper.Jwtauth))
+				r.Get("/access_token", session.GetAccessToken(s.helper.Jwtauth))
 			})
 		})
 
@@ -125,13 +123,13 @@ func (s *Server) createHandlers() http.Handler {
 		})
 
 		r.Route("/auth", func(r chi.Router) {
-			r.Post("/register", auth.Register(*s.helper.Email, s.stores.crypto, s.stores.userStore, s.stores.profileStore, s.stores.passwordStore, s.stores.otpStore))
-			r.Post("/verification", auth.Verification(*s.helper.Email, s.stores.crypto, s.stores.otpStore, s.stores.userStore))
-			r.Post("/login", auth.Login(*s.helper.Jwtauth, s.stores.crypto, s.stores.userStore, s.stores.sessionStore, s.stores.clientStore))
+			r.Post("/register", auth.Register(s.helper.Email, s.helper.Crypto, s.stores.userStore, s.stores.profileStore, s.stores.passwordStore, s.stores.otpStore))
+			r.Post("/verification", auth.Verification(s.helper.Email, s.helper.Crypto, s.stores.otpStore, s.stores.userStore))
+			r.Post("/login", auth.Login(s.helper.Jwtauth, s.helper.Crypto, s.stores.userStore, s.stores.sessionStore, s.stores.clientStore))
 
 			r.Route("/password", func(r chi.Router) {
-				r.Post("/forgot", auth.ForgotPassword(*s.helper.Email, s.stores.crypto, s.stores.userStore, s.stores.otpStore))
-				r.Post("/reset", auth.ResetPassword(s.stores.crypto, s.stores.userStore, s.stores.passwordStore, s.stores.otpStore))
+				r.Post("/forgot", auth.ForgotPassword(s.helper.Email, s.helper.Crypto, s.stores.userStore, s.stores.otpStore))
+				r.Post("/reset", auth.ResetPassword(s.helper.Crypto, s.stores.userStore, s.stores.passwordStore, s.stores.otpStore))
 			})
 		})
 	})

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/aemiralfath/IH-Userland-Onboard/api"
+	"github.com/aemiralfath/IH-Userland-Onboard/api/crypto"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/email"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
@@ -77,6 +78,7 @@ func main() {
 	serverHelperSouce := &api.HelperSource{
 		Jwtauth: jwt.New(jwtCfg),
 		Email:   email.NewEmail(emailCfg),
+		Crypto:  crypto.NewAppCrypto(),
 	}
 
 	log.Info().Msg("starting api server")

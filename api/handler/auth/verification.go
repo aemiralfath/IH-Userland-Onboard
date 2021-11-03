@@ -6,22 +6,23 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/aemiralfath/IH-Userland-Onboard/api/crypto"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/email"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/go-chi/render"
 )
 
-type verificationRequest struct {
+type VerificationRequest struct {
 	Type      string `json:"type"`
 	Recipient string `json:"recipient"`
 }
 
-func Verification(email email.Email, crypto datastore.Crypto, otp datastore.OTPStore, userStore datastore.UserStore) http.HandlerFunc {
+func Verification(email email.Email, crypto crypto.Crypto, otp datastore.OTPStore, userStore datastore.UserStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
-		req := &verificationRequest{}
+		req := &VerificationRequest{}
 
 		if err := render.Bind(r, req); err != nil {
 			render.Render(w, r, helper.BadRequestErrorRenderer(err))
@@ -62,11 +63,11 @@ func Verification(email email.Email, crypto datastore.Crypto, otp datastore.OTPS
 	}
 }
 
-func (verification *verificationRequest) Bind(r *http.Request) error {
+func (verification *VerificationRequest) Bind(r *http.Request) error {
 	if strings.TrimSpace(verification.Recipient) == "" {
 		return fmt.Errorf("required recipient")
 	}
 	return nil
 }
 
-func (verification *verificationRequest) Render(w http.ResponseWriter, r *http.Request) {}
+func (verification *VerificationRequest) Render(w http.ResponseWriter, r *http.Request) {}

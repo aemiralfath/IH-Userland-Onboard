@@ -12,6 +12,14 @@ import (
 	"github.com/lestrrat-go/jwx/jwt"
 )
 
+type JWT interface {
+	Verifier() func(http.Handler) http.Handler
+	Verify(findTokenFns ...func(r *http.Request) string) func(http.Handler) http.Handler
+	VerifyRequest(r *http.Request, findTokenFns ...func(r *http.Request) string) (jwt.Token, error)
+	VerifyToken(tokenString string) (jwt.Token, error)
+	CreateToken(userID float64, email string, minute int) (*Token, string, error)
+}
+
 type JWTConfig struct {
 	Alg       string
 	SignKey   interface{}
@@ -54,7 +62,7 @@ var (
 	ErrAlgoInvalid  = errors.New("algorithm mismatch")
 )
 
-func New(jwtConfig JWTConfig) *JWTAuth {
+func New(jwtConfig JWTConfig) JWT {
 	ja := &JWTAuth{alg: jwa.SignatureAlgorithm(jwtConfig.Alg), signKey: []byte(jwtConfig.SignKey.(string)), verifyKey: jwtConfig.VerifyKey}
 
 	if ja.verifyKey != nil {
@@ -66,17 +74,17 @@ func New(jwtConfig JWTConfig) *JWTAuth {
 	return ja
 }
 
-func Verifier(ja *JWTAuth) func(http.Handler) http.Handler {
+func (ja *JWTAuth) Verifier() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
-		return Verify(ja, TokenFromHeader, TokenFromCookie)(next)
+		return ja.Verify(TokenFromHeader, TokenFromCookie)(next)
 	}
 }
 
-func Verify(ja *JWTAuth, findTokenFns ...func(r *http.Request) string) func(http.Handler) http.Handler {
+func (ja *JWTAuth) Verify(findTokenFns ...func(r *http.Request) string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		hfn := func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
-			token, err := VerifyRequest(ja, r, findTokenFns...)
+			token, err := ja.VerifyRequest(r, findTokenFns...)
 			ctx = NewContext(ctx, token, err)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		}
@@ -84,7 +92,7 @@ func Verify(ja *JWTAuth, findTokenFns ...func(r *http.Request) string) func(http
 	}
 }
 
-func VerifyRequest(ja *JWTAuth, r *http.Request, findTokenFns ...func(r *http.Request) string) (jwt.Token, error) {
+func (ja *JWTAuth) VerifyRequest(r *http.Request, findTokenFns ...func(r *http.Request) string) (jwt.Token, error) {
 	var tokenString string
 
 	for _, fn := range findTokenFns {
@@ -97,10 +105,10 @@ func VerifyRequest(ja *JWTAuth, r *http.Request, findTokenFns ...func(r *http.Re
 		return nil, ErrNoTokenFound
 	}
 
-	return VerifyToken(ja, tokenString)
+	return ja.VerifyToken(tokenString)
 }
 
-func VerifyToken(ja *JWTAuth, tokenString string) (jwt.Token, error) {
+func (ja *JWTAuth) VerifyToken(tokenString string) (jwt.Token, error) {
 	token, err := ja.Decode(tokenString)
 	if err != nil {
 		return token, ErrorReason(err)
@@ -136,7 +144,7 @@ func Authenticator(next http.Handler) http.Handler {
 	})
 }
 
-func (jwtAuth JWTAuth) CreateToken(userID float64, email string, minute int) (*Token, string, error) {
+func (ja *JWTAuth) CreateToken(userID float64, email string, minute int) (*Token, string, error) {
 	jti := helper.GenerateRandomID()
 	expires_at := time.Now().Add(time.Duration(minute) * time.Minute)
 
@@ -146,7 +154,7 @@ func (jwtAuth JWTAuth) CreateToken(userID float64, email string, minute int) (*T
 	accessTokenClaims["userID"] = userID
 	accessTokenClaims["exp"] = expires_at
 
-	_, tokenString, err := jwtAuth.Encode(accessTokenClaims)
+	_, tokenString, err := ja.Encode(accessTokenClaims)
 	if err != nil {
 		return nil, jti, err
 	}

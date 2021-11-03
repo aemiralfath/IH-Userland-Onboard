@@ -12,7 +12,7 @@ import (
 	"github.com/go-chi/render"
 )
 
-func SetPicture(jwtAuth jwt.JWTAuth, profileStore datastore.ProfileStore) http.HandlerFunc {
+func SetPicture(jwtAuth jwt.JWT, profileStore datastore.ProfileStore) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		_, claims, err := jwt.FromContext(ctx)

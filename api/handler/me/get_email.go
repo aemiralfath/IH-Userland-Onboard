@@ -11,7 +11,7 @@ import (
 	"github.com/go-chi/render"
 )
 
-func GetEmail(jwtAuth jwt.JWTAuth, userStore datastore.UserStore) http.HandlerFunc {
+func GetEmail(jwtAuth jwt.JWT, userStore datastore.UserStore) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		_, claims, err := jwt.FromContext(ctx)

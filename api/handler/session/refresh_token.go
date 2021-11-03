@@ -10,7 +10,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func GetRefreshToken(jwtAuth jwt.JWTAuth) http.HandlerFunc {
+func GetRefreshToken(jwtAuth jwt.JWT) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		_, claims, err := jwt.FromContext(ctx)

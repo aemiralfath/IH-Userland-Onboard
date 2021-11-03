@@ -29,6 +29,8 @@ mockstore:
 	mockgen -destination datastore/mock/profile_store.go github.com/aemiralfath/IH-Userland-Onboard/datastore ProfileStore
 	mockgen -destination datastore/mock/password_store.go github.com/aemiralfath/IH-Userland-Onboard/datastore PasswordStore
 	mockgen -destination datastore/mock/otp_store.go github.com/aemiralfath/IH-Userland-Onboard/datastore OTPStore
-	mockgen -destination datastore/mock/crypto.go github.com/aemiralfath/IH-Userland-Onboard/datastore Crypto
+	mockgen -destination api/crypto/mock/crypto.go github.com/aemiralfath/IH-Userland-Onboard/api/crypto Crypto
+	mockgen -destination api/email/mock/email.go github.com/aemiralfath/IH-Userland-Onboard/api/email Email
+	mockgen -destination api/jwt/mock/jwt.go github.com/aemiralfath/IH-Userland-Onboard/api/jwt JWT
 
 .PHONY: postgres createdb dropdb migrateup migratedown checkdb migratedirty

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/aemiralfath/IH-Userland-Onboard/api/crypto"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
@@ -16,7 +17,7 @@ type deleteAccountRequest struct {
 	Password string `json:"password"`
 }
 
-func DeleteAccount(jwtAuth jwt.JWTAuth, crypto datastore.Crypto, userStore datastore.UserStore) http.HandlerFunc {
+func DeleteAccount(jwtAuth jwt.JWT, crypto crypto.Crypto, userStore datastore.UserStore) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		req := &deleteAccountRequest{}

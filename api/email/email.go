@@ -5,6 +5,10 @@ import (
 	"net/smtp"
 )
 
+type Email interface {
+	SendEmail(toEmail string, subject string, msg string)
+}
+
 type EmailConfig struct {
 	Host     string
 	Port     string
@@ -12,21 +16,21 @@ type EmailConfig struct {
 	Password string
 }
 
-type Email struct {
+type EmailSendInBlue struct {
 	Auth smtp.Auth
 	Addr string
 	From string
 }
 
-func NewEmail(config EmailConfig) *Email {
-	return &Email{
+func NewEmail(config EmailConfig) Email {
+	return &EmailSendInBlue{
 		Auth: smtp.PlainAuth("", config.From, config.Password, config.Host),
 		Addr: fmt.Sprintf("%s:%v", config.Host, config.Port),
 		From: config.From,
 	}
 }
 
-func (email *Email) SendEmail(toEmail string, subject string, msg string) {
+func (email *EmailSendInBlue) SendEmail(toEmail string, subject string, msg string) {
 	from := email.From
 	value := []byte("To: " + toEmail + "\r\n" +
 		"From: " + from + "\r\n" +

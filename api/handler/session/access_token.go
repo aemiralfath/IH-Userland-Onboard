@@ -9,7 +9,7 @@ import (
 	"github.com/go-chi/render"
 )
 
-func GetAccessToken(jwtAuth jwt.JWTAuth) http.HandlerFunc {
+func GetAccessToken(jwtAuth jwt.JWT) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		_, claims, err := jwt.FromContext(ctx)

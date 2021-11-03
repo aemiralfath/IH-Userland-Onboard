@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/aemiralfath/IH-Userland-Onboard/api/crypto"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
@@ -19,7 +20,7 @@ type changePasswordRequest struct {
 	PasswordConfirm string `json:"password_confirm"`
 }
 
-func ChangePassword(jwtAuth jwt.JWTAuth, crypto datastore.Crypto, userStore datastore.UserStore, passwordStore datastore.PasswordStore) http.HandlerFunc {
+func ChangePassword(jwtAuth jwt.JWT, crypto crypto.Crypto, userStore datastore.UserStore, passwordStore datastore.PasswordStore) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		req := &changePasswordRequest{}
@@ -78,7 +79,7 @@ func ChangePassword(jwtAuth jwt.JWTAuth, crypto datastore.Crypto, userStore data
 	}
 }
 
-func updateStore(ctx context.Context, crypto datastore.Crypto, req *changePasswordRequest, usr *datastore.User, userStore datastore.UserStore, passwordStore datastore.PasswordStore) error {
+func updateStore(ctx context.Context, crypto crypto.Crypto, req *changePasswordRequest, usr *datastore.User, userStore datastore.UserStore, passwordStore datastore.PasswordStore) error {
 	hashPassword, err := crypto.HashPassword(req.Password)
 	if err != nil {
 		return err

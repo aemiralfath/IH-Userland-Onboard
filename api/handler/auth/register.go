@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/aemiralfath/IH-Userland-Onboard/api/crypto"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/email"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
@@ -13,18 +14,18 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type registerRequest struct {
+type RegisterRequest struct {
 	Fullname        string `json:"fullname"`
 	Email           string `json:"email"`
 	Password        string `json:"password"`
 	PasswordConfirm string `json:"password_confirm"`
 }
 
-func Register(email email.Email, crypto datastore.Crypto, userStore datastore.UserStore, profileStore datastore.ProfileStore, passwordStore datastore.PasswordStore, otp datastore.OTPStore) http.HandlerFunc {
+func Register(email email.Email, crypto crypto.Crypto, userStore datastore.UserStore, profileStore datastore.ProfileStore, passwordStore datastore.PasswordStore, otp datastore.OTPStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
-		req := &registerRequest{}
+		req := &RegisterRequest{}
 
 		if err := render.Bind(r, req); err != nil {
 			render.Render(w, r, helper.BadRequestErrorRenderer(err))
@@ -95,26 +96,26 @@ func Register(email email.Email, crypto datastore.Crypto, userStore datastore.Us
 	}
 }
 
-func parseRegisterRequestUser(u *registerRequest) *datastore.User {
+func parseRegisterRequestUser(u *RegisterRequest) *datastore.User {
 	return &datastore.User{
 		Email:    u.Email,
 		Password: u.Password,
 	}
 }
 
-func parseRegisterRequestProfile(u *registerRequest) *datastore.Profile {
+func parseRegisterRequestProfile(u *RegisterRequest) *datastore.Profile {
 	return &datastore.Profile{
 		Fullname: u.Fullname,
 	}
 }
 
-func parseRegisterRequestPassword(u *registerRequest) *datastore.Password {
+func parseRegisterRequestPassword(u *RegisterRequest) *datastore.Password {
 	return &datastore.Password{
 		Password: u.Password,
 	}
 }
 
-func (register *registerRequest) Bind(r *http.Request) error {
+func (register *RegisterRequest) Bind(r *http.Request) error {
 	if strings.TrimSpace(register.Fullname) == "" {
 		return fmt.Errorf("required fullname")
 	}
@@ -135,4 +136,4 @@ func (register *registerRequest) Bind(r *http.Request) error {
 	return nil
 }
 
-func (*registerRequest) Render(w http.ResponseWriter, r *http.Request) {}
+func (*RegisterRequest) Render(w http.ResponseWriter, r *http.Request) {}

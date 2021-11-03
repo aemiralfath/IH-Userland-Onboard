@@ -18,7 +18,7 @@ type updateProfileRequest struct {
 	Web      string `json:"web"`
 }
 
-func UpdateProfile(jwtAuth jwt.JWTAuth, profileStore datastore.ProfileStore) http.HandlerFunc {
+func UpdateProfile(jwtAuth jwt.JWT, profileStore datastore.ProfileStore) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		req := &updateProfileRequest{}

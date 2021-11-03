@@ -11,7 +11,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func EndCurrentSession(jwtAuth jwt.JWTAuth, sessionStore datastore.SessionStore) http.HandlerFunc {
+func EndCurrentSession(jwtAuth jwt.JWT, sessionStore datastore.SessionStore) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		_, claims, err := jwt.FromContext(ctx)

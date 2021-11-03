@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/aemiralfath/IH-Userland-Onboard/api/crypto"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/go-chi/render"
@@ -18,7 +19,7 @@ type resetPasswordRequest struct {
 	PasswordConfirm string `json:"password_confirm"`
 }
 
-func ResetPassword(crypto datastore.Crypto, userStore datastore.UserStore, passwordStore datastore.PasswordStore, otp datastore.OTPStore) http.HandlerFunc {
+func ResetPassword(crypto crypto.Crypto, userStore datastore.UserStore, passwordStore datastore.PasswordStore, otp datastore.OTPStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
@@ -74,7 +75,7 @@ func ResetPassword(crypto datastore.Crypto, userStore datastore.UserStore, passw
 
 func updateStore(
 	ctx context.Context,
-	crypto datastore.Crypto,
+	crypto crypto.Crypto,
 	req *resetPasswordRequest,
 	usr *datastore.User,
 	userStore datastore.UserStore,
