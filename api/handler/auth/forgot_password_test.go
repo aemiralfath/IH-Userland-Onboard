@@ -1,7 +1,6 @@
 package auth_test
 
 import (
-	"fmt"
 	"net/http"
 	"testing"
 
@@ -14,45 +13,17 @@ import (
 	"github.com/golang/mock/gomock"
 )
 
-func TestVerification(t *testing.T) {
+func TestForgotPassword(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
+
+	request := auth.ForgotPasswordRequest{
+		Email: "account@example.com",
+	}
 
 	headers := http.Header{}
 	headers.Add("content-type", "application/json")
 	headers.Add("X-Api-ClientID", "postman")
-
-	request := auth.VerificationRequest{
-		Type:      "email.verify",
-		Recipient: "account@example.com",
-	}
-
-	user := &datastore.User{
-		ID:    0,
-		Email: "account@example.com",
-	}
-
-	userStore := mock_datastore.NewMockUserStore(ctrl)
-	userStore.EXPECT().
-		CheckUserEmailExist(gomock.Any(), gomock.Eq(request.Recipient)).
-		Times(1).
-		Return(user, nil)
-
-	otpCode := "123456"
-	cryptoMock := mock_crypto.NewMockCrypto(ctrl)
-	cryptoMock.EXPECT().
-		GenerateOTP(gomock.Eq(6)).
-		Times(1).
-		Return(otpCode, nil)
-
-	value := fmt.Sprintf("%f-%s", float64(user.ID), user.Email)
-	otpStore := mock_datastore.NewMockOTPStore(ctrl)
-	otpStore.EXPECT().
-		SetOTP(gomock.Any(), "user", gomock.Eq(otpCode), gomock.Eq(value)).
-		Times(1).
-		Return(nil)
-
-	emailMock := mock_email.NewMockEmail(ctrl)
 
 	w := &helper.ResponseWriter{}
 	r := &http.Request{
@@ -61,12 +32,34 @@ func TestVerification(t *testing.T) {
 
 	r.Body = helper.RequestBody(request)
 
-	handler := auth.Verification(
-		emailMock,
-		cryptoMock,
-		otpStore,
-		userStore)
+	user := &datastore.User{
+		ID:    0,
+		Email: "account@example.com",
+	}
 
+	userStore := mock_datastore.NewMockUserStore(ctrl)
+	userStore.EXPECT().
+		GetUserByEmail(gomock.Any(), gomock.Eq(request.Email)).
+		Times(1).
+		Return(user, nil)
+
+	otpCode := "123456"
+
+	cryptoMock := mock_crypto.NewMockCrypto(ctrl)
+	cryptoMock.EXPECT().
+		GenerateOTP(6).
+		Times(1).
+		Return(otpCode, nil)
+
+	otpStore := mock_datastore.NewMockOTPStore(ctrl)
+	otpStore.EXPECT().
+		SetOTP(gomock.Any(), "password", otpCode, request.Email).
+		Times(1).
+		Return(nil)
+
+	emailMock := mock_email.NewMockEmail(ctrl)
+
+	handler := auth.ForgotPassword(emailMock, cryptoMock, userStore, otpStore)
 	handler(w, r)
 
 	result := w.GetBodyJSON()

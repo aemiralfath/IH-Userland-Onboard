@@ -13,7 +13,7 @@ import (
 	"github.com/go-chi/render"
 )
 
-type forgotPasswordRequest struct {
+type ForgotPasswordRequest struct {
 	Email string `json:"Email"`
 }
 
@@ -21,7 +21,7 @@ func ForgotPassword(email email.Email, crypto crypto.Crypto, userStore datastore
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
-		req := &forgotPasswordRequest{}
+		req := &ForgotPasswordRequest{}
 
 		if err := render.Bind(r, req); err != nil {
 			render.Render(w, r, helper.BadRequestErrorRenderer(err))
@@ -62,11 +62,11 @@ func ForgotPassword(email email.Email, crypto crypto.Crypto, userStore datastore
 	}
 }
 
-func (request *forgotPasswordRequest) Bind(r *http.Request) error {
+func (request *ForgotPasswordRequest) Bind(r *http.Request) error {
 	if strings.TrimSpace(request.Email) == "" {
 		return fmt.Errorf("required email")
 	}
 	return nil
 }
 
-func (*forgotPasswordRequest) Render(w http.ResponseWriter, r *http.Request) {}
+func (*ForgotPasswordRequest) Render(w http.ResponseWriter, r *http.Request) {}

@@ -13,7 +13,7 @@ import (
 	"github.com/go-chi/render"
 )
 
-type resetPasswordRequest struct {
+type ResetPasswordRequest struct {
 	Token           string `json:"token"`
 	Password        string `json:"password"`
 	PasswordConfirm string `json:"password_confirm"`
@@ -23,7 +23,7 @@ func ResetPassword(crypto crypto.Crypto, userStore datastore.UserStore, password
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
-		req := &resetPasswordRequest{}
+		req := &ResetPasswordRequest{}
 
 		if err := render.Bind(r, req); err != nil {
 			render.Render(w, r, helper.BadRequestErrorRenderer(err))
@@ -76,7 +76,7 @@ func ResetPassword(crypto crypto.Crypto, userStore datastore.UserStore, password
 func updateStore(
 	ctx context.Context,
 	crypto crypto.Crypto,
-	req *resetPasswordRequest,
+	req *ResetPasswordRequest,
 	usr *datastore.User,
 	userStore datastore.UserStore,
 	passwordStore datastore.PasswordStore) error {
@@ -98,13 +98,13 @@ func updateStore(
 	return nil
 }
 
-func parseResetRequestPassword(u *resetPasswordRequest) *datastore.Password {
+func parseResetRequestPassword(u *ResetPasswordRequest) *datastore.Password {
 	return &datastore.Password{
 		Password: u.Password,
 	}
 }
 
-func (request *resetPasswordRequest) Bind(r *http.Request) error {
+func (request *ResetPasswordRequest) Bind(r *http.Request) error {
 	if strings.TrimSpace(request.Token) == "" {
 		return fmt.Errorf("required token")
 	}
@@ -121,4 +121,4 @@ func (request *resetPasswordRequest) Bind(r *http.Request) error {
 	return nil
 }
 
-func (*resetPasswordRequest) Render(w http.ResponseWriter, r *http.Request) {}
+func (*ResetPasswordRequest) Render(w http.ResponseWriter, r *http.Request) {}
