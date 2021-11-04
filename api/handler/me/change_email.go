@@ -15,21 +15,21 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type changeEmailRequest struct {
+type ChangeEmailRequest struct {
 	Email string `json:"email"`
 }
 
 func ChangeEmail(jwtAuth jwt.JWT, crypto crypto.Crypto, email email.Email, userStore datastore.UserStore, otp datastore.OTPStore) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		req := &changeEmailRequest{}
+		req := &ChangeEmailRequest{}
 
 		if err := render.Bind(r, req); err != nil {
 			render.Render(rw, r, helper.BadRequestErrorRenderer(err))
 			return
 		}
 
-		_, claims, err := jwt.FromContext(ctx)
+		_, claims, err := jwtAuth.FromContext(ctx)
 		if err != nil {
 			fmt.Println(render.Render(rw, r, helper.BadRequestErrorRenderer(err)))
 			return
@@ -71,11 +71,11 @@ func ChangeEmail(jwtAuth jwt.JWT, crypto crypto.Crypto, email email.Email, userS
 	}
 }
 
-func (request *changeEmailRequest) Bind(r *http.Request) error {
+func (request *ChangeEmailRequest) Bind(r *http.Request) error {
 	if strings.TrimSpace(request.Email) == "" {
 		return fmt.Errorf("required Email")
 	}
 	return nil
 }
 
-func (*changeEmailRequest) Render(w http.ResponseWriter, r *http.Request) {}
+func (*ChangeEmailRequest) Render(w http.ResponseWriter, r *http.Request) {}

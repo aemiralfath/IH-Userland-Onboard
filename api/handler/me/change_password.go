@@ -14,7 +14,7 @@ import (
 	"github.com/go-chi/render"
 )
 
-type changePasswordRequest struct {
+type ChangePasswordRequest struct {
 	PasswordCurrent string `json:"password_current"`
 	Password        string `json:"password"`
 	PasswordConfirm string `json:"password_confirm"`
@@ -23,14 +23,14 @@ type changePasswordRequest struct {
 func ChangePassword(jwtAuth jwt.JWT, crypto crypto.Crypto, userStore datastore.UserStore, passwordStore datastore.PasswordStore) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		req := &changePasswordRequest{}
+		req := &ChangePasswordRequest{}
 
 		if err := render.Bind(r, req); err != nil {
 			render.Render(rw, r, helper.BadRequestErrorRenderer(err))
 			return
 		}
 
-		_, claims, err := jwt.FromContext(ctx)
+		_, claims, err := jwtAuth.FromContext(ctx)
 		if err != nil {
 			fmt.Println(render.Render(rw, r, helper.BadRequestErrorRenderer(err)))
 			return
@@ -79,7 +79,7 @@ func ChangePassword(jwtAuth jwt.JWT, crypto crypto.Crypto, userStore datastore.U
 	}
 }
 
-func updateStore(ctx context.Context, crypto crypto.Crypto, req *changePasswordRequest, usr *datastore.User, userStore datastore.UserStore, passwordStore datastore.PasswordStore) error {
+func updateStore(ctx context.Context, crypto crypto.Crypto, req *ChangePasswordRequest, usr *datastore.User, userStore datastore.UserStore, passwordStore datastore.PasswordStore) error {
 	hashPassword, err := crypto.HashPassword(req.Password)
 	if err != nil {
 		return err
@@ -97,13 +97,13 @@ func updateStore(ctx context.Context, crypto crypto.Crypto, req *changePasswordR
 	return nil
 }
 
-func parseChangeRequestPassword(u *changePasswordRequest) *datastore.Password {
+func parseChangeRequestPassword(u *ChangePasswordRequest) *datastore.Password {
 	return &datastore.Password{
 		Password: u.Password,
 	}
 }
 
-func (request *changePasswordRequest) Bind(r *http.Request) error {
+func (request *ChangePasswordRequest) Bind(r *http.Request) error {
 	if strings.TrimSpace(request.PasswordCurrent) == "" {
 		return fmt.Errorf("required current password")
 	}
@@ -119,4 +119,4 @@ func (request *changePasswordRequest) Bind(r *http.Request) error {
 	return nil
 }
 
-func (*changePasswordRequest) Render(w http.ResponseWriter, r *http.Request) {}
+func (*ChangePasswordRequest) Render(w http.ResponseWriter, r *http.Request) {}

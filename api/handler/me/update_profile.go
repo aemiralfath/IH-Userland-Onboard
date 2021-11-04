@@ -11,7 +11,7 @@ import (
 	"github.com/go-chi/render"
 )
 
-type updateProfileRequest struct {
+type UpdateProfileRequest struct {
 	Fullname string `json:"fullname"`
 	Location string `json:"location"`
 	Bio      string `json:"bio"`
@@ -21,21 +21,21 @@ type updateProfileRequest struct {
 func UpdateProfile(jwtAuth jwt.JWT, profileStore datastore.ProfileStore) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		req := &updateProfileRequest{}
+		req := &UpdateProfileRequest{}
 
 		if err := render.Bind(r, req); err != nil {
 			render.Render(rw, r, helper.BadRequestErrorRenderer(err))
 			return
 		}
 
-		_, claims, err := jwt.FromContext(ctx)
+		_, claims, err := jwtAuth.FromContext(ctx)
 		if err != nil {
 			fmt.Println(render.Render(rw, r, helper.BadRequestErrorRenderer(err)))
 			return
 		}
 
 		userId := claims["userID"]
-		if err := profileStore.UpdateProfile(ctx, parseUpdateRequestProfile(req), userId.(float64)); err != nil {
+		if err := profileStore.UpdateProfile(ctx, ParseUpdateRequestProfile(req), userId.(float64)); err != nil {
 			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
@@ -47,7 +47,7 @@ func UpdateProfile(jwtAuth jwt.JWT, profileStore datastore.ProfileStore) http.Ha
 	}
 }
 
-func parseUpdateRequestProfile(p *updateProfileRequest) *datastore.Profile {
+func ParseUpdateRequestProfile(p *UpdateProfileRequest) *datastore.Profile {
 	return &datastore.Profile{
 		Fullname: p.Fullname,
 		Location: p.Location,
@@ -56,11 +56,11 @@ func parseUpdateRequestProfile(p *updateProfileRequest) *datastore.Profile {
 	}
 }
 
-func (request *updateProfileRequest) Bind(r *http.Request) error {
+func (request *UpdateProfileRequest) Bind(r *http.Request) error {
 	if strings.TrimSpace(request.Fullname) == "" {
 		return fmt.Errorf("required Fullname")
 	}
 	return nil
 }
 
-func (*updateProfileRequest) Render(w http.ResponseWriter, r *http.Request) {}
+func (*UpdateProfileRequest) Render(w http.ResponseWriter, r *http.Request) {}

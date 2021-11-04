@@ -18,6 +18,8 @@ type JWT interface {
 	VerifyRequest(r *http.Request, findTokenFns ...func(r *http.Request) string) (jwt.Token, error)
 	VerifyToken(tokenString string) (jwt.Token, error)
 	CreateToken(userID float64, email string, minute int) (*Token, string, error)
+	Authenticator(next http.Handler) http.Handler
+	FromContext(ctx context.Context) (jwt.Token, map[string]interface{}, error)
 }
 
 type JWTConfig struct {
@@ -125,9 +127,9 @@ func (ja *JWTAuth) VerifyToken(tokenString string) (jwt.Token, error) {
 	return token, nil
 }
 
-func Authenticator(next http.Handler) http.Handler {
+func (ja *JWTAuth) Authenticator(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token, _, err := FromContext(r.Context())
+		token, _, err := ja.FromContext(r.Context())
 
 		if err != nil {
 			http.Error(w, err.Error(), 401)
@@ -180,7 +182,7 @@ func NewContext(ctx context.Context, t jwt.Token, err error) context.Context {
 	return ctx
 }
 
-func FromContext(ctx context.Context) (jwt.Token, map[string]interface{}, error) {
+func (ja *JWTAuth) FromContext(ctx context.Context) (jwt.Token, map[string]interface{}, error) {
 	token, _ := ctx.Value(TokenCtxKey).(jwt.Token)
 
 	var err error

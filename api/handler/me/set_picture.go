@@ -15,7 +15,7 @@ import (
 func SetPicture(jwtAuth jwt.JWT, profileStore datastore.ProfileStore) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		_, claims, err := jwt.FromContext(ctx)
+		_, claims, err := jwtAuth.FromContext(ctx)
 		if err != nil {
 			fmt.Println(render.Render(rw, r, helper.BadRequestErrorRenderer(err)))
 			return

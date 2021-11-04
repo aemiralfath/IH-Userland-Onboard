@@ -5,6 +5,7 @@
 package mock_jwt
 
 import (
+	context "context"
 	jwt "github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
 	gomock "github.com/golang/mock/gomock"
 	jwt0 "github.com/lestrrat-go/jwx/jwt"
@@ -35,6 +36,20 @@ func (m *MockJWT) EXPECT() *MockJWTMockRecorder {
 	return m.recorder
 }
 
+// Authenticator mocks base method
+func (m *MockJWT) Authenticator(arg0 http.Handler) http.Handler {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Authenticator", arg0)
+	ret0, _ := ret[0].(http.Handler)
+	return ret0
+}
+
+// Authenticator indicates an expected call of Authenticator
+func (mr *MockJWTMockRecorder) Authenticator(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authenticator", reflect.TypeOf((*MockJWT)(nil).Authenticator), arg0)
+}
+
 // CreateToken mocks base method
 func (m *MockJWT) CreateToken(arg0 float64, arg1 string, arg2 int) (*jwt.Token, string, error) {
 	m.ctrl.T.Helper()
@@ -49,6 +64,22 @@ func (m *MockJWT) CreateToken(arg0 float64, arg1 string, arg2 int) (*jwt.Token, 
 func (mr *MockJWTMockRecorder) CreateToken(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateToken", reflect.TypeOf((*MockJWT)(nil).CreateToken), arg0, arg1, arg2)
+}
+
+// FromContext mocks base method
+func (m *MockJWT) FromContext(arg0 context.Context) (jwt0.Token, map[string]interface{}, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FromContext", arg0)
+	ret0, _ := ret[0].(jwt0.Token)
+	ret1, _ := ret[1].(map[string]interface{})
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// FromContext indicates an expected call of FromContext
+func (mr *MockJWTMockRecorder) FromContext(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FromContext", reflect.TypeOf((*MockJWT)(nil).FromContext), arg0)
 }
 
 // Verifier mocks base method

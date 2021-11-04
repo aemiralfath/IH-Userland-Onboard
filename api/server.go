@@ -92,7 +92,7 @@ func (s *Server) createHandlers() http.Handler {
 
 	r.Group(func(r chi.Router) {
 		r.Use(s.helper.Jwtauth.Verifier())
-		r.Use(jwt.Authenticator)
+		r.Use(s.helper.Jwtauth.Authenticator)
 		r.Route("/me", func(r chi.Router) {
 			r.Get("/", me.GetProfile(s.helper.Jwtauth, s.stores.profileStore))
 			r.Post("/", me.UpdateProfile(s.helper.Jwtauth, s.stores.profileStore))

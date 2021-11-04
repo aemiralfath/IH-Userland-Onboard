@@ -27,7 +27,7 @@ func DeleteAccount(jwtAuth jwt.JWT, crypto crypto.Crypto, userStore datastore.Us
 			return
 		}
 
-		_, claims, err := jwt.FromContext(ctx)
+		_, claims, err := jwtAuth.FromContext(ctx)
 		if err != nil {
 			fmt.Println(render.Render(rw, r, helper.BadRequestErrorRenderer(err)))
 			return
