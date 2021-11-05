@@ -8,6 +8,7 @@ import (
 	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/go-chi/render"
+	"github.com/rs/zerolog/log"
 )
 
 func GetProfile(jwtAuth jwt.JWT, profileStore datastore.ProfileStore) http.HandlerFunc {
@@ -22,6 +23,7 @@ func GetProfile(jwtAuth jwt.JWT, profileStore datastore.ProfileStore) http.Handl
 		userId := claims["userID"]
 		profile, err := profileStore.GetProfile(ctx, userId.(float64))
 		if err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			fmt.Println(render.Render(rw, r, helper.InternalServerErrorRenderer(err)))
 			return
 		}

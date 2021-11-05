@@ -11,6 +11,7 @@ import (
 	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/go-chi/render"
+	"github.com/rs/zerolog/log"
 )
 
 type deleteAccountRequest struct {
@@ -40,6 +41,7 @@ func DeleteAccount(jwtAuth jwt.JWT, crypto crypto.Crypto, userStore datastore.Us
 				render.Render(rw, r, helper.BadRequestErrorRenderer(fmt.Errorf("User not found")))
 				return
 			} else {
+				log.Error().Err(err).Stack().Msg(err.Error())
 				render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 				return
 			}
@@ -51,11 +53,13 @@ func DeleteAccount(jwtAuth jwt.JWT, crypto crypto.Crypto, userStore datastore.Us
 		}
 
 		if err := userStore.SoftDeleteUser(ctx, emailUser.(string)); err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
 		if err := render.Render(rw, r, helper.SuccesRenderer()); err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 			return
 		}

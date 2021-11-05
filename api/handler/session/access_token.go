@@ -7,6 +7,7 @@ import (
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
 	"github.com/go-chi/render"
+	"github.com/rs/zerolog/log"
 )
 
 func GetAccessToken(jwtAuth jwt.JWT) http.HandlerFunc {
@@ -23,6 +24,7 @@ func GetAccessToken(jwtAuth jwt.JWT) http.HandlerFunc {
 
 		accessToken, _, err := jwtAuth.CreateToken(userId.(float64), userEmail.(string), jwt.AccessTokenExpiration)
 		if err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 			return
 		}

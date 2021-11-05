@@ -10,6 +10,7 @@ import (
 	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/go-chi/render"
+	"github.com/rs/zerolog/log"
 )
 
 func SetPicture(jwtAuth jwt.JWT, profileStore datastore.ProfileStore) http.HandlerFunc {
@@ -49,17 +50,20 @@ func SetPicture(jwtAuth jwt.JWT, profileStore datastore.ProfileStore) http.Handl
 		defer localFile.Close()
 
 		if _, err := io.Copy(localFile, file); err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
 		profile.Picture = fileName
 		if err := profileStore.UpdatePicture(ctx, profile, userId.(float64)); err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
 		if err := render.Render(rw, r, helper.SuccesRenderer()); err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 			return
 		}

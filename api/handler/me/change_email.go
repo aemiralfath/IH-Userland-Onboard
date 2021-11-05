@@ -31,6 +31,7 @@ func ChangeEmail(jwtAuth jwt.JWT, crypto crypto.Crypto, email email.Email, userS
 
 		_, claims, err := jwtAuth.FromContext(ctx)
 		if err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			fmt.Println(render.Render(rw, r, helper.BadRequestErrorRenderer(err)))
 			return
 		}
@@ -47,6 +48,7 @@ func ChangeEmail(jwtAuth jwt.JWT, crypto crypto.Crypto, email email.Email, userS
 
 		otpCode, err := crypto.GenerateOTP(6)
 		if err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
@@ -54,6 +56,7 @@ func ChangeEmail(jwtAuth jwt.JWT, crypto crypto.Crypto, email email.Email, userS
 		userId := claims["userID"]
 		otpValue := fmt.Sprintf("%f-%s", userId.(float64), req.Email)
 		if err := otp.SetOTP(ctx, "user", otpCode, otpValue); err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
@@ -64,6 +67,7 @@ func ChangeEmail(jwtAuth jwt.JWT, crypto crypto.Crypto, email email.Email, userS
 		go email.SendEmail(req.Email, subject, msg)
 
 		if err := render.Render(rw, r, helper.SuccesRenderer()); err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 			return
 		}

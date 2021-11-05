@@ -11,6 +11,7 @@ import (
 	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/go-chi/render"
+	"github.com/rs/zerolog/log"
 )
 
 type LoginRequest struct {
@@ -41,6 +42,7 @@ func Login(jwtAuth jwt.JWT, crypto crypto.Crypto, userStore datastore.UserStore,
 				render.Render(w, r, helper.BadRequestErrorRenderer(fmt.Errorf("User not found")))
 				return
 			} else {
+				log.Error().Err(err).Stack().Msg(err.Error())
 				render.Render(w, r, helper.InternalServerErrorRenderer(err))
 				return
 			}
@@ -53,17 +55,20 @@ func Login(jwtAuth jwt.JWT, crypto crypto.Crypto, userStore datastore.UserStore,
 
 		accessToken, jti, err := jwtAuth.CreateToken(usr.ID, usr.Email, jwt.AccessTokenExpiration)
 		if err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
 		client, err := clientStore.GetClientByName(ctx, clientName)
 		if err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
 		if err := sessionStore.AddNewSession(ctx, &datastore.Session{JTI: jti, UserId: usr.ID, IsCurrent: true}, client.ID); err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}

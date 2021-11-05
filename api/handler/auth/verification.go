@@ -11,6 +11,7 @@ import (
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/go-chi/render"
+	"github.com/rs/zerolog/log"
 )
 
 type VerificationRequest struct {
@@ -34,6 +35,7 @@ func Verification(email email.Email, crypto crypto.Crypto, otp datastore.OTPStor
 				render.Render(w, r, helper.BadRequestErrorRenderer(fmt.Errorf("User not found")))
 				return
 			} else {
+				log.Error().Err(err).Stack().Msg(err.Error())
 				render.Render(w, r, helper.InternalServerErrorRenderer(err))
 				return
 			}
@@ -41,12 +43,14 @@ func Verification(email email.Email, crypto crypto.Crypto, otp datastore.OTPStor
 
 		otpCode, err := crypto.GenerateOTP(6)
 		if err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
 		otpValue := fmt.Sprintf("%f-%s", usr.ID, req.Recipient)
 		if err := otp.SetOTP(ctx, "user", otpCode, otpValue); err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
@@ -57,6 +61,7 @@ func Verification(email email.Email, crypto crypto.Crypto, otp datastore.OTPStor
 		go email.SendEmail(req.Recipient, subject, msg)
 
 		if err := render.Render(w, r, helper.SuccesRenderer()); err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			fmt.Println(render.Render(w, r, helper.InternalServerErrorRenderer(err)))
 			return
 		}

@@ -9,6 +9,7 @@ import (
 	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/go-chi/render"
+	"github.com/rs/zerolog/log"
 )
 
 type UpdateProfileRequest struct {
@@ -36,11 +37,13 @@ func UpdateProfile(jwtAuth jwt.JWT, profileStore datastore.ProfileStore) http.Ha
 
 		userId := claims["userID"]
 		if err := profileStore.UpdateProfile(ctx, ParseUpdateRequestProfile(req), userId.(float64)); err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
 		if err := render.Render(rw, r, helper.SuccesRenderer()); err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 			return
 		}

@@ -11,6 +11,7 @@ import (
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/go-chi/render"
+	"github.com/rs/zerolog/log"
 )
 
 type ResetPasswordRequest struct {
@@ -42,6 +43,7 @@ func ResetPassword(crypto crypto.Crypto, userStore datastore.UserStore, password
 				render.Render(w, r, helper.BadRequestErrorRenderer(fmt.Errorf("User not found")))
 				return
 			} else {
+				log.Error().Err(err).Stack().Msg(err.Error())
 				render.Render(w, r, helper.InternalServerErrorRenderer(err))
 				return
 			}
@@ -49,6 +51,7 @@ func ResetPassword(crypto crypto.Crypto, userStore datastore.UserStore, password
 
 		lastThreePassword, err := passwordStore.GetLastThreePassword(ctx, usr.ID)
 		if err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
@@ -61,11 +64,13 @@ func ResetPassword(crypto crypto.Crypto, userStore datastore.UserStore, password
 		}
 
 		if err := updateStore(ctx, crypto, req, usr, userStore, passwordStore); err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
 		if err := render.Render(w, r, helper.SuccesRenderer()); err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}

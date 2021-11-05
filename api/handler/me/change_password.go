@@ -12,6 +12,7 @@ import (
 	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/go-chi/render"
+	"github.com/rs/zerolog/log"
 )
 
 type ChangePasswordRequest struct {
@@ -43,6 +44,7 @@ func ChangePassword(jwtAuth jwt.JWT, crypto crypto.Crypto, userStore datastore.U
 				render.Render(rw, r, helper.BadRequestErrorRenderer(fmt.Errorf("User not found")))
 				return
 			} else {
+				log.Error().Err(err).Stack().Msg(err.Error())
 				render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 				return
 			}
@@ -55,6 +57,7 @@ func ChangePassword(jwtAuth jwt.JWT, crypto crypto.Crypto, userStore datastore.U
 
 		lastThreePassword, err := passwordStore.GetLastThreePassword(ctx, usr.ID)
 		if err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
@@ -67,11 +70,13 @@ func ChangePassword(jwtAuth jwt.JWT, crypto crypto.Crypto, userStore datastore.U
 		}
 
 		if err := updateStore(ctx, crypto, req, usr, userStore, passwordStore); err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
 		if err := render.Render(rw, r, helper.SuccesRenderer()); err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 			return
 		}

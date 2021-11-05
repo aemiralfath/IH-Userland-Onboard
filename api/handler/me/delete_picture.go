@@ -9,6 +9,7 @@ import (
 	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/go-chi/render"
+	"github.com/rs/zerolog/log"
 )
 
 func DeletePicture(jwtAuth jwt.JWT, profileStore datastore.ProfileStore) http.HandlerFunc {
@@ -28,17 +29,20 @@ func DeletePicture(jwtAuth jwt.JWT, profileStore datastore.ProfileStore) http.Ha
 		}
 
 		if err := os.Remove(profile.Picture); err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
 		profile.Picture = ""
 		if err := profileStore.UpdatePicture(ctx, profile, userId.(float64)); err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
 		if err := render.Render(rw, r, helper.SuccesRenderer()); err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 			return
 		}

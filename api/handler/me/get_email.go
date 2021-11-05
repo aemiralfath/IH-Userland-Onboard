@@ -9,6 +9,7 @@ import (
 	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/go-chi/render"
+	"github.com/rs/zerolog/log"
 )
 
 func GetEmail(jwtAuth jwt.JWT, userStore datastore.UserStore) http.HandlerFunc {
@@ -27,6 +28,7 @@ func GetEmail(jwtAuth jwt.JWT, userStore datastore.UserStore) http.HandlerFunc {
 				render.Render(rw, r, helper.BadRequestErrorRenderer(fmt.Errorf("User not found")))
 				return
 			} else {
+				log.Error().Err(err).Stack().Msg(err.Error())
 				render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 				return
 			}
