@@ -84,7 +84,14 @@ func TestRegister(t *testing.T) {
 		Times(1).
 		Return(nil)
 
+	subject := "Userland Email Verification!"
+	msg := fmt.Sprintf("Use this otp for verify your email: %s", otpCode)
+
+
 	emailMock := mock_email.NewMockEmail(ctrl)
+	emailMock.EXPECT().
+		SendEmail(request.Email, subject, msg).
+		Times(1)
 
 	w := &helper.ResponseWriter{}
 	r := &http.Request{
