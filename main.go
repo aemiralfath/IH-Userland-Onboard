@@ -8,6 +8,7 @@ import (
 	"github.com/aemiralfath/IH-Userland-Onboard/api/crypto"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/email"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
+	"github.com/aemiralfath/IH-Userland-Onboard/api/kafka"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog/log"
@@ -40,6 +41,13 @@ func main() {
 		Alg:       os.Getenv("JWT_ALG"),
 		SignKey:   os.Getenv("JWT_SIGN"),
 		VerifyKey: nil,
+	}
+
+	kafkaCfg := kafka.KafkaConfig{
+		Host:   os.Getenv("KAFKA_HOST"),
+		Port:   os.Getenv("KAFKA_PORT"),
+		Group:  os.Getenv("KAFKA_GROUP"),
+		Offset: os.Getenv("KAFKA_OFFSET"),
 	}
 
 	postgresCfg := datastore.PostgresConfig{
@@ -79,6 +87,7 @@ func main() {
 		Jwtauth: jwt.New(jwtCfg),
 		Email:   email.NewEmail(emailCfg),
 		Crypto:  crypto.NewAppCrypto(),
+		Kafka:   kafka.NewKafka(kafkaCfg),
 	}
 
 	log.Info().Msg("starting api server")

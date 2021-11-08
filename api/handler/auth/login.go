@@ -2,6 +2,7 @@ package auth
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"github.com/aemiralfath/IH-Userland-Onboard/api/crypto"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
+	"github.com/aemiralfath/IH-Userland-Onboard/api/kafka"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/go-chi/render"
 	"github.com/rs/zerolog/log"
@@ -24,7 +26,7 @@ type loginResponse struct {
 	AccessToken *jwt.Token `json:"access_token"`
 }
 
-func Login(jwtAuth jwt.JWT, crypto crypto.Crypto, userStore datastore.UserStore, sessionStore datastore.SessionStore, clientStore datastore.ClientStore) http.HandlerFunc {
+func Login(jwtAuth jwt.JWT, crypto crypto.Crypto, kafka kafka.Kafka, userStore datastore.UserStore, sessionStore datastore.SessionStore, clientStore datastore.ClientStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
@@ -68,6 +70,28 @@ func Login(jwtAuth jwt.JWT, crypto crypto.Crypto, userStore datastore.UserStore,
 		}
 
 		if err := sessionStore.AddNewSession(ctx, &datastore.Session{JTI: jti, UserId: usr.ID, IsCurrent: true}, client.ID); err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
+			render.Render(w, r, helper.InternalServerErrorRenderer(err))
+			return
+		}
+
+		producer, err := kafka.NewProducer()
+		if err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
+			render.Render(w, r, helper.InternalServerErrorRenderer(err))
+			return
+		}
+
+		defer producer.Close()
+
+		topic := "login-succeed"
+		message, _ := json.Marshal(map[string]interface{}{
+			"remote-ip": "0.0.0.0",
+			"username":  usr.Email,
+			"userid":    usr.ID,
+		})
+
+		if err := kafka.Produce(producer, topic, message); err != nil {
 			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return

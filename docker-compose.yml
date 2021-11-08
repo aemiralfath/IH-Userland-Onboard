@@ -47,5 +47,30 @@ services:
       default:
         aliases:
           - userland_service
+  zk:
+    image: confluentinc/cp-zookeeper
+    ports: 
+      - "22181:22181"
+    environment:
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_CLIENT_PORT: 22181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SERVERS: zk:22888:23888
+  kafka:
+    image: confluentinc/cp-kafka
+    ports:
+      - "19092:19092"
+      - "19091:19091"
+    depends_on:
+      - zk
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zk:22181
+      KAFKA_LISTENERS: LISTENER_INTERNAL://kafka:19092,LISTENER_EXTERNAL://kafka:19091
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_INTERNAL://kafka:19092,LISTENER_EXTERNAL://localhost:19091
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_INTERNAL:PLAINTEXT,LISTENER_EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_INTERNAL
 networks: 
   default:

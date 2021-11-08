@@ -11,6 +11,7 @@ import (
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
 	mock_jwt "github.com/aemiralfath/IH-Userland-Onboard/api/jwt/mock"
+	mock_kafka "github.com/aemiralfath/IH-Userland-Onboard/api/kafka/mock"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	mock_datastore "github.com/aemiralfath/IH-Userland-Onboard/datastore/mock"
 	"github.com/golang/mock/gomock"
@@ -90,7 +91,9 @@ func TestLogin(t *testing.T) {
 		Times(1).
 		Return(nil)
 
-	handler := auth.Login(jwtMock, cryptoMock, userStore, sessionStore, clientStore)
+	kafkaMock := mock_kafka.NewMockKafka(ctrl)
+
+	handler := auth.Login(jwtMock, cryptoMock, kafkaMock, userStore, sessionStore, clientStore)
 	handler(w, r)
 
 	result := w.GetBodyJSON()

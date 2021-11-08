@@ -16,6 +16,7 @@ import (
 	"github.com/aemiralfath/IH-Userland-Onboard/api/handler/me"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/handler/session"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
+	"github.com/aemiralfath/IH-Userland-Onboard/api/kafka"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore/postgres"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore/redisdb"
@@ -41,6 +42,7 @@ type HelperSource struct {
 	Jwtauth jwt.JWT
 	Email   email.Email
 	Crypto  crypto.Crypto
+	Kafka   kafka.Kafka
 }
 
 type serverStores struct {
@@ -125,7 +127,7 @@ func (s *Server) createHandlers() http.Handler {
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/register", auth.Register(s.helper.Email, s.helper.Crypto, s.stores.userStore, s.stores.profileStore, s.stores.passwordStore, s.stores.otpStore))
 			r.Post("/verification", auth.Verification(s.helper.Email, s.helper.Crypto, s.stores.otpStore, s.stores.userStore))
-			r.Post("/login", auth.Login(s.helper.Jwtauth, s.helper.Crypto, s.stores.userStore, s.stores.sessionStore, s.stores.clientStore))
+			r.Post("/login", auth.Login(s.helper.Jwtauth, s.helper.Crypto, s.helper.Kafka, s.stores.userStore, s.stores.sessionStore, s.stores.clientStore))
 
 			r.Route("/password", func(r chi.Router) {
 				r.Post("/forgot", auth.ForgotPassword(s.helper.Email, s.helper.Crypto, s.stores.userStore, s.stores.otpStore))
@@ -176,4 +178,26 @@ func (s *Server) Start() {
 			panic("failed to shutdown gracefully")
 		}
 	}(srv)
+
+	// consumer, err := s.helper.Kafka.NewConsumer()
+	// if err != nil {
+	// 	log.Fatal().Err(err).Stack().Msg("cannot add new consumer")
+	// }
+
+	// err = consumer.SubscribeTopics([]string{"login-succeed"}, nil)
+	// if err != nil {
+	// 	log.Fatal().Err(err).Stack().Msg("cannot subscribe topics")
+	// }
+
+	// for {
+	// 	msg, err := consumer.ReadMessage(-1)
+	// 	if err == nil {
+	// 		fmt.Printf("Message on %s: %s\n", msg.TopicPartition, string(msg.Value))
+	// 	} else {
+	// 		// The client will automatically try to recover from all errors.
+	// 		fmt.Printf("Consumer error: %v (%v)\n", err, msg)
+	// 	}
+	// }
+
+	// consumer.Close()
 }
