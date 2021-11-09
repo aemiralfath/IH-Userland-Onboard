@@ -14,22 +14,25 @@ checkdb:
 	docker exec -it ih-userland-onboard_postgres_1 psql userland -U admin -c "\d users"
 
 kafka-topic:
-	docker run --net=host --rm confluentinc/cp-kafka:5.0.0 kafka-topics --create --topic login-succeed --partitions 4 --replication-factor 1 --if-not-exists --zookeeper localhost:22181
+	docker run --net=host --rm confluentinc/cp-kafka:latest kafka-topics --create --topic login-succeed --bootstrap-server localhost:19091 --partitions 2 --replication-factor 1
 
-kafka-cat:
+kafka-cat1:
 	kafkacat -C -b localhost:19091 -t login-succeed -p 0
+
+kafka-cat2:
+	kafkacat -C -b localhost:19091 -t login-succeed -p 1
 
 kafka-publish:
 	echo 'test' | kafkacat -P -b localhost:19091 -t login-succeed -p 0
 
 migrateup:
-	migrate -path datastore/migrations -database "postgres://admin:admin@localhost:5431/userland?sslmode=disable" -verbose up
+	migrate -path db/migrations -database "postgres://admin:admin@localhost:5431/userland?sslmode=disable" -verbose up
 
 migratedown:
-	migrate -path datastore/migrations -database "postgres://admin:admin@localhost:5431/userland?sslmode=disable" -verbose down
+	migrate -path db/migrations -database "postgres://admin:admin@localhost:5431/userland?sslmode=disable" -verbose down
 
 migratedirty:
-	migrate -path datastore/migrations -database "postgres://admin:admin@localhost:5431/userland?sslmode=disable" force 000001
+	migrate -path db/migrations -database "postgres://admin:admin@localhost:5431/userland?sslmode=disable" force 000001
 
 mockstore:
 	mockgen -destination datastore/mock/user_store.go github.com/aemiralfath/IH-Userland-Onboard/datastore UserStore
