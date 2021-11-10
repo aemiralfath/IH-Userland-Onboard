@@ -7,9 +7,7 @@ import (
 )
 
 type Kafka interface {
-	NewConsumer() (*kafka.Consumer, error)
-	NewProducer() (*kafka.Producer, error)
-	Produce(producer *kafka.Producer, topic string, message []byte) error
+	SendMessage(topic string, message []byte) error
 }
 
 type KafkaConfig struct {
@@ -31,16 +29,15 @@ func NewKafka(config KafkaConfig) Kafka {
 	}
 }
 
-func (k *KafkaConfluentinc) NewConsumer() (*kafka.Consumer, error) {
-	return kafka.NewConsumer(k.Config)
-}
+func (k *KafkaConfluentinc) SendMessage(topic string, message []byte) error {
+	producer, err := kafka.NewProducer(k.Config)
+	if err != nil {
+		return err
+	}
 
-func (k *KafkaConfluentinc) NewProducer() (*kafka.Producer, error) {
-	return kafka.NewProducer(k.Config)
-}
+	defer producer.Close()
 
-func (k *KafkaConfluentinc) Produce(producer *kafka.Producer, topic string, message []byte) error {
-	err := producer.Produce(&kafka.Message{
+	err = producer.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 		Value:          message,
 	}, nil)

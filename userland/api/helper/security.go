@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"net/http"
 	"unicode"
 
 	"github.com/thanhpk/randstr"
@@ -27,4 +28,16 @@ func VerifyPassword(s string) (eightOrMore, number, upper bool) {
 func GenerateRandomID() string {
 	randomIDBytes := 128 / 8 // 128-bit
 	return randstr.Hex(randomIDBytes)
+}
+
+func GetIPAddress(r *http.Request) string {
+	ip := r.Header.Get("X-Real-Ip")
+	if ip == "" {
+		ip = r.Header.Get("X-Forwarded-For")
+	}
+
+	if ip == "" {
+		ip = r.RemoteAddr
+	}
+	return ip
 }

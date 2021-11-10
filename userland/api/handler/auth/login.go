@@ -33,14 +33,7 @@ func Login(jwtAuth jwt.JWT, crypto crypto.Crypto, kafka kafka.Kafka, userStore d
 		req := &LoginRequest{}
 		clientName := r.Header.Get("X-API-ClientID")
 
-		ip := r.Header.Get("X-Real-Ip")
-		if ip == "" {
-			ip = r.Header.Get("X-Forwarded-For")
-		}
-
-		if ip == "" {
-			ip = r.RemoteAddr
-		}
+		ip := helper.GetIPAddress(r)
 
 		if err := render.Bind(r, req); err != nil {
 			render.Render(w, r, helper.BadRequestErrorRenderer(err))
@@ -84,15 +77,6 @@ func Login(jwtAuth jwt.JWT, crypto crypto.Crypto, kafka kafka.Kafka, userStore d
 			return
 		}
 
-		producer, err := kafka.NewProducer()
-		if err != nil {
-			log.Error().Err(err).Stack().Msg(err.Error())
-			render.Render(w, r, helper.InternalServerErrorRenderer(err))
-			return
-		}
-
-		defer producer.Close()
-
 		topic := "login-succeed"
 		message, _ := json.Marshal(map[string]interface{}{
 			"remote-ip": ip,
@@ -100,7 +84,7 @@ func Login(jwtAuth jwt.JWT, crypto crypto.Crypto, kafka kafka.Kafka, userStore d
 			"userid":    usr.ID,
 		})
 
-		if err := kafka.Produce(producer, topic, message); err != nil {
+		if err := kafka.SendMessage(topic, message); err != nil {
 			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
