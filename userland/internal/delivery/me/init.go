@@ -14,6 +14,7 @@ type meUC interface {
 	ChangePassword(ctx context.Context, userId string, body model.ChangePasswordRequest) (model.ChangePasswordResponse, error)
 	DeleteAccount(ctx context.Context, userId string, body model.DeleteAccountRequest) (model.DeleteAccountResponse, error)
 	SetPicture(ctx context.Context, userId, fileName string) (model.SetPictureResponse, error)
+	DeletePicture(ctx context.Context, userId string) (model.DeletePictureResponse, error)
 }
 
 type DeliveryMe struct {

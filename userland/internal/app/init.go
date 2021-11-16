@@ -86,7 +86,7 @@ func (app *App) createHandlers() http.Handler {
 			r.Post("/email", d.me.ChangeEmail)
 
 			r.Post("/picture", d.me.SetPicture)
-			// r.Delete("/picture", d.me.DeletePicture)
+			r.Delete("/picture", d.me.DeletePicture)
 
 			r.Post("/password", d.me.ChangePassword)
 			r.Post("/delete", d.me.DeleteAccount)

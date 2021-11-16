@@ -15,6 +15,7 @@ type meRepo interface {
 	ChangePassword(ctx context.Context, userId string, body model.ChangePasswordRequest) error
 	DeleteAccount(ctx context.Context, userId string, body model.DeleteAccountRequest) error
 	SetPicture(ctx context.Context, userId, fileName string) error
+	DeletePicture(ctx context.Context, userId string) (string, error)
 }
 
 type UsecaseMe struct {
