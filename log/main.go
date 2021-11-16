@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/stdlib"
 	"github.com/rs/zerolog/log"
@@ -15,11 +16,10 @@ import (
 func main() {
 
 	connString := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s",
+		"postgres://%s:%s@%s/%s",
 		os.Getenv("POSTGRES_USER"),
 		os.Getenv("POSTGRES_PASSWORD"),
-		os.Getenv("POSTGRES_HOST"),
-		os.Getenv("POSTGRES_PORT"),
+		os.Getenv("POSTGRES_ADDR"),
 		os.Getenv("POSTGRES_DB"),
 	)
 
@@ -60,12 +60,20 @@ func main() {
 			var m map[string]interface{}
 			json.Unmarshal(msg.Value, &m)
 
-			fmt.Printf("Message on %s: %s\n", msg.TopicPartition, string(msg.Value))
-			query := `INSERT INTO "audit_logs" (user_id, remote_ip, username) VALUES ($1, $2, $3)`
-			_, err = db.Exec(query, m["userid"], m["remote-ip"], m["username"])
+			id, err := uuid.NewRandom()
+			if err != nil {
+				log.Error().Err(err).Msg("failed to create id")
+				return
+			}
+
+			log.Info().Msg(fmt.Sprintf("Adding Data %s, %s, %s", m["userid"], m["remote-ip"], m["username"]))
+			query := `INSERT INTO "audit_logs" (id, user_id, remote_ip, username) VALUES ($1, $2, $3, $4)`
+			_, err = db.Exec(query, id, m["userid"], m["remote-ip"], m["username"])
 			if err != nil {
 				log.Error().Err(err).Msg("failed to add message")
+				return
 			}
+			log.Info().Msg("Add log success")
 		} else {
 			// The client will automatically try to recover from all errors.
 			fmt.Printf("Consumer error: %v (%v)\n", err, msg)

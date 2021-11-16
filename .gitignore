@@ -16,5 +16,4 @@
 
 .env
 assets/profile
-data/
-vendor/
+
