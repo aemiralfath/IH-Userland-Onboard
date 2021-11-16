@@ -21,4 +21,5 @@ type ProfileStore interface {
 	AddNewProfile(ctx context.Context, profile Profile) (Profile, error)
 	GetProfileById(ctx context.Context, id string) (Profile, error)
 	UpdateProfile(ctx context.Context, id, name, dosageType string) error
+	SetPicture(ctx context.Context, id, name string) error
 }

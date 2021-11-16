@@ -97,3 +97,18 @@ func (s *ProfileStore) UpdateProfile(ctx context.Context, id, name, dosageType s
 
 	return nil
 }
+
+func (s *ProfileStore) SetPicture(ctx context.Context, id, name string) error {
+	query := `UPDATE "profile" SET "picture" = $1 WHERE "id" = $2`
+	stmt, err := s.db.Prepare(query)
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.ExecContext(ctx, name, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

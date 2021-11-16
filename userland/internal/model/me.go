@@ -44,3 +44,7 @@ type DeleteAccountRequest struct {
 type DeleteAccountResponse struct {
 	Success bool `json:"success"`
 }
+
+type SetPictureResponse struct {
+	Success bool `json:"success"`
+}

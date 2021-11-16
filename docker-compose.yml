@@ -30,6 +30,7 @@ services:
       - KAFKA_PORT=${KAFKA_PORT}
       - KAFKA_GROUP=${KAFKA_GROUP}
       - KAFKA_OFFSET=${KAFKA_OFFSET}
+      - PROFILE_PATH=${PROFILE_PATH}
     depends_on:
       - postgres
       - redis

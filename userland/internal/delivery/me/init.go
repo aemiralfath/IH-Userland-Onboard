@@ -13,6 +13,7 @@ type meUC interface {
 	ChangeEmail(ctx context.Context, userId string, body model.ChangeEmailRequest) (model.ChangeEmailResponse, error)
 	ChangePassword(ctx context.Context, userId string, body model.ChangePasswordRequest) (model.ChangePasswordResponse, error)
 	DeleteAccount(ctx context.Context, userId string, body model.DeleteAccountRequest) (model.DeleteAccountResponse, error)
+	SetPicture(ctx context.Context, userId, fileName string) (model.SetPictureResponse, error)
 }
 
 type DeliveryMe struct {

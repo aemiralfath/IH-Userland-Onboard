@@ -85,7 +85,7 @@ func (app *App) createHandlers() http.Handler {
 			r.Get("/email", d.me.Email)
 			r.Post("/email", d.me.ChangeEmail)
 
-			// r.Post("/picture", d.me.SetPicture)
+			r.Post("/picture", d.me.SetPicture)
 			// r.Delete("/picture", d.me.DeletePicture)
 
 			r.Post("/password", d.me.ChangePassword)
