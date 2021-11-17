@@ -13,14 +13,26 @@ dropdb:
 checkdb:
 	docker exec -it ih-userland-onboard_postgres_1 psql userland -U admin -c "\d users"
 
+kafka-topic:
+	docker run --net=host --rm confluentinc/cp-kafka:latest kafka-topics --create --topic login-succeed --bootstrap-server localhost:19091 --partitions 2 --replication-factor 1
+
+kafka-cat1:
+	kafkacat -C -b localhost:19091 -t login-succeed -p 0
+
+kafka-cat2:
+	kafkacat -C -b localhost:19091 -t login-succeed -p 1
+
+kafka-publish:
+	echo 'test' | kafkacat -P -b localhost:19091 -t login-succeed -p 0
+
 migrateup:
-	migrate -path datastore/migrations -database "postgres://admin:admin@localhost:5431/userland?sslmode=disable" -verbose up
+	migrate -path db/migrations -database "postgres://admin:admin@localhost:5431/userland?sslmode=disable" -verbose up
 
 migratedown:
-	migrate -path datastore/migrations -database "postgres://admin:admin@localhost:5431/userland?sslmode=disable" -verbose down
+	migrate -path db/migrations -database "postgres://admin:admin@localhost:5431/userland?sslmode=disable" -verbose down
 
 migratedirty:
-	migrate -path datastore/migrations -database "postgres://admin:admin@localhost:5431/userland?sslmode=disable" force 000001
+	migrate -path db/migrations -database "postgres://admin:admin@localhost:5431/userland?sslmode=disable" force 000001
 
 mockstore:
 	mockgen -destination datastore/mock/user_store.go github.com/aemiralfath/IH-Userland-Onboard/datastore UserStore
@@ -32,5 +44,6 @@ mockstore:
 	mockgen -destination api/crypto/mock/crypto.go github.com/aemiralfath/IH-Userland-Onboard/api/crypto Crypto
 	mockgen -destination api/email/mock/email.go github.com/aemiralfath/IH-Userland-Onboard/api/email Email
 	mockgen -destination api/jwt/mock/jwt.go github.com/aemiralfath/IH-Userland-Onboard/api/jwt JWT
+	mockgen -destination api/kafka/mock/kafka.go github.com/aemiralfath/IH-Userland-Onboard/api/kafka Kafka
 
 .PHONY: postgres createdb dropdb migrateup migratedown checkdb migratedirty
