@@ -1,12 +1,13 @@
 package auth
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
+	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/go-chi/render"
 )
@@ -16,11 +17,17 @@ type loginRequest struct {
 	Password string `json:"password"`
 }
 
-func Login(jwtAuth helper.JWTAuth, userStore datastore.UserStore) http.HandlerFunc {
+type loginResponse struct {
+	RequireTFA  bool       `json:"require_tfa"`
+	AccessToken *jwt.Token `json:"access_token"`
+}
+
+func Login(jwtAuth jwt.JWTAuth, userStore datastore.UserStore, sessionStore datastore.SessionStore, clientStore datastore.ClientStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
 		req := &loginRequest{}
+		clientName := r.Header.Get("X-API-ClientID")
 
 		if err := render.Bind(r, req); err != nil {
 			render.Render(w, r, helper.BadRequestErrorRenderer(err))
@@ -28,12 +35,14 @@ func Login(jwtAuth helper.JWTAuth, userStore datastore.UserStore) http.HandlerFu
 		}
 
 		usr, err := userStore.GetUserByEmail(ctx, req.Email)
-		if usr == nil {
-			render.Render(w, r, helper.BadRequestErrorRenderer(err))
-			return
-		} else if err != nil {
-			fmt.Println(render.Render(w, r, helper.InternalServerErrorRenderer(err)))
-			return
+		if err != nil {
+			if err == sql.ErrNoRows {
+				render.Render(w, r, helper.BadRequestErrorRenderer(fmt.Errorf("User not found")))
+				return
+			} else {
+				render.Render(w, r, helper.InternalServerErrorRenderer(err))
+				return
+			}
 		}
 
 		if err := helper.ConfirmPassword(usr.Password, req.Password); err != nil {
@@ -41,36 +50,26 @@ func Login(jwtAuth helper.JWTAuth, userStore datastore.UserStore) http.HandlerFu
 			return
 		}
 
-		accessTokenClaims := make(map[string]interface{})
-		accessTokenClaims["id"] = usr.ID
-		accessTokenClaims["email"] = usr.Email
-		helper.SetIssuedNow(accessTokenClaims)
-		helper.SetExpiryIn(accessTokenClaims, time.Duration(helper.AccessTokenExpiration))
-
-		_, accessToken, err := jwtAuth.Encode(accessTokenClaims)
+		accessToken, jti, err := jwtAuth.CreateToken(usr.ID, usr.Email, jwt.AccessTokenExpiration)
 		if err != nil {
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
-		// refreshTokenClaims := make(map[string]interface{})
-		// refreshTokenClaims["email"] = usr.Email
-		// helper.SetIssuedNow(refreshTokenClaims)
-		// helper.SetExpiryIn(refreshTokenClaims, time.Duration(helper.RefreshTokenExpiration))
+		client, err := clientStore.GetClientByName(ctx, clientName)
+		if err != nil {
+			render.Render(w, r, helper.InternalServerErrorRenderer(err))
+			return
+		}
 
-		// _, refreshToken, err := jwtAuth.Encode(refreshTokenClaims)
-		// if err != nil {
-		// 	fmt.Println(render.Render(w, r, handler.BadRequestErrorRenderer(err)))
-		// 	return
-		// }
+		if err := sessionStore.AddNewSession(ctx, &datastore.Session{JTI: jti, UserId: usr.ID, IsCurrent: true}, client.ID); err != nil {
+			render.Render(w, r, helper.InternalServerErrorRenderer(err))
+			return
+		}
 
-		helper.CustomRender(w, http.StatusOK, map[string]interface{}{
-			"require_tfa": false,
-			"access_token": map[string]string{
-				"value":      accessToken,
-				"type":       "BEARER",
-				"expired_at": time.Unix(accessTokenClaims["exp"].(int64), 0).String(),
-			},
+		helper.CustomRender(w, http.StatusOK, loginResponse{
+			RequireTFA:  false,
+			AccessToken: accessToken,
 		})
 	}
 }

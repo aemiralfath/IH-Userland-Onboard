@@ -1,17 +1,17 @@
-package me
+package session
 
 import (
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/go-chi/render"
+	"github.com/rs/zerolog/log"
 )
 
-func DeletePicture(jwtAuth jwt.JWTAuth, profileStore datastore.ProfileStore) http.HandlerFunc {
+func EndCurrentSession(jwtAuth jwt.JWTAuth, sessionStore datastore.SessionStore) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		_, claims, err := jwt.FromContext(ctx)
@@ -20,27 +20,18 @@ func DeletePicture(jwtAuth jwt.JWTAuth, profileStore datastore.ProfileStore) htt
 			return
 		}
 
-		userId := claims["userID"]
-		profile, err := profileStore.GetProfile(ctx, userId.(float64))
-		if err != nil {
-			fmt.Println(render.Render(rw, r, helper.UnauthorizedErrorRenderer(err)))
-			return
-		}
-
-		if err := os.Remove(profile.Picture); err != nil {
-			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
-			return
-		}
-
-		profile.Picture = ""
-		if err := profileStore.UpdatePicture(ctx, profile, userId.(float64)); err != nil {
+		id := claims["id"]
+		if err := sessionStore.EndSession(ctx, id.(string)); err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
 		if err := render.Render(rw, r, helper.SuccesRenderer()); err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
+
 	}
 }

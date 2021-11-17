@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"unicode"
 
+	"github.com/thanhpk/randstr"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -47,4 +48,9 @@ func GenerateOTP(length int) (string, error) {
 	}
 
 	return string(buffer), nil
+}
+
+func GenerateRandomID() string {
+	randomIDBytes := 128 / 8 // 128-bit
+	return randstr.Hex(randomIDBytes)
 }

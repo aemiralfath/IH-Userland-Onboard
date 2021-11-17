@@ -2,11 +2,13 @@ package me
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
+	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/go-chi/render"
 )
@@ -17,7 +19,7 @@ type changePasswordRequest struct {
 	PasswordConfirm string `json:"password_confirm"`
 }
 
-func ChangePassword(jwtAuth helper.JWTAuth, userStore datastore.UserStore, passwordStore datastore.PasswordStore) http.HandlerFunc {
+func ChangePassword(jwtAuth jwt.JWTAuth, userStore datastore.UserStore, passwordStore datastore.PasswordStore) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		req := &changePasswordRequest{}
@@ -27,7 +29,7 @@ func ChangePassword(jwtAuth helper.JWTAuth, userStore datastore.UserStore, passw
 			return
 		}
 
-		_, claims, err := helper.FromContext(ctx)
+		_, claims, err := jwt.FromContext(ctx)
 		if err != nil {
 			fmt.Println(render.Render(rw, r, helper.BadRequestErrorRenderer(err)))
 			return
@@ -35,12 +37,14 @@ func ChangePassword(jwtAuth helper.JWTAuth, userStore datastore.UserStore, passw
 
 		emailUser := claims["email"]
 		usr, err := userStore.GetUserByEmail(ctx, emailUser.(string))
-		if usr == nil {
-			render.Render(rw, r, helper.BadRequestErrorRenderer(err))
-			return
-		} else if err != nil {
-			fmt.Println(render.Render(rw, r, helper.InternalServerErrorRenderer(err)))
-			return
+		if err != nil {
+			if err == sql.ErrNoRows {
+				render.Render(rw, r, helper.BadRequestErrorRenderer(fmt.Errorf("User not found")))
+				return
+			} else {
+				render.Render(rw, r, helper.InternalServerErrorRenderer(err))
+				return
+			}
 		}
 
 		if err := helper.ConfirmPassword(usr.Password, req.PasswordCurrent); err != nil {

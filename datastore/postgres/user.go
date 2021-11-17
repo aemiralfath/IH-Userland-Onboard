@@ -3,7 +3,6 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"time"
 
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
@@ -29,14 +28,10 @@ func (s *UserStore) GetUserByEmail(ctx context.Context, email string) (*datastor
 	var user datastore.User
 	err = stmt.QueryRowContext(ctx, email).Scan(&user.ID, &user.Email, &user.Password)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("User not found")
-		} else {
-			return nil, err
-		}
-	} else {
-		return &user, nil
+		return nil, err
 	}
+
+	return &user, nil
 }
 
 func (us *UserStore) AddNewUser(ctx context.Context, u *datastore.User) (float64, error) {
@@ -81,14 +76,10 @@ func (s *UserStore) GetEmailByID(ctx context.Context, userId float64) (string, e
 	var email string
 	err = stmt.QueryRowContext(ctx, userId).Scan(&email)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return "", fmt.Errorf("User not found")
-		} else {
-			return "", err
-		}
-	} else {
-		return email, nil
+		return "", err
 	}
+
+	return email, nil
 }
 
 func (s *UserStore) CheckUserEmailExist(ctx context.Context, email string) (*datastore.User, error) {
@@ -101,17 +92,13 @@ func (s *UserStore) CheckUserEmailExist(ctx context.Context, email string) (*dat
 	var user datastore.User
 	err = stmt.QueryRowContext(ctx, email).Scan(&user.ID, &user.Email)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("User not found")
-		} else {
-			return nil, err
-		}
-	} else {
-		return &user, nil
+		return nil, err
 	}
+
+	return &user, nil
 }
 
-func (s *UserStore) SafeDeleteUser(ctx context.Context, email string) error {
+func (s *UserStore) SoftDeleteUser(ctx context.Context, email string) error {
 	query := `UPDATE "user" SET "deleted_at" = $1 WHERE "email" = $2`
 	stmt, err := s.db.Prepare(query)
 	if err != nil {

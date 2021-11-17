@@ -1,13 +1,16 @@
 package auth
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
 	"strings"
 
+	"github.com/aemiralfath/IH-Userland-Onboard/api/email"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/go-chi/render"
+	"github.com/rs/zerolog/log"
 )
 
 type registerRequest struct {
@@ -17,7 +20,7 @@ type registerRequest struct {
 	PasswordConfirm string `json:"password_confirm"`
 }
 
-func Register(email helper.Email, userStore datastore.UserStore, profileStore datastore.ProfileStore, passwordStore datastore.PasswordStore, token datastore.TokenStore) http.HandlerFunc {
+func Register(email email.Email, userStore datastore.UserStore, profileStore datastore.ProfileStore, passwordStore datastore.PasswordStore, otp datastore.OTPStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
@@ -28,14 +31,19 @@ func Register(email helper.Email, userStore datastore.UserStore, profileStore da
 			return
 		}
 
-		usr, _ := userStore.CheckUserEmailExist(ctx, req.Email)
-		if usr != nil {
-			render.Render(w, r, helper.BadRequestErrorRenderer(fmt.Errorf("Email already exist!")))
+		_, err := userStore.CheckUserEmailExist(ctx, req.Email)
+		if err != nil && err != sql.ErrNoRows {
+			log.Error().Err(err).Stack().Msg(err.Error())
+			render.Render(w, r, helper.InternalServerErrorRenderer(err))
+			return
+		} else if err == nil {
+			fmt.Println(render.Render(w, r, helper.BadRequestErrorRenderer(fmt.Errorf("Email already used"))))
 			return
 		}
 
 		hashPassword, err := helper.HashPassword(req.Password)
 		if err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
@@ -43,38 +51,44 @@ func Register(email helper.Email, userStore datastore.UserStore, profileStore da
 		req.Password = string(hashPassword)
 		userId, err := userStore.AddNewUser(ctx, parseRegisterRequestUser(req))
 		if err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
 		if err := profileStore.AddNewProfile(ctx, parseRegisterRequestProfile(req), userId); err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
 		if err := passwordStore.AddNewPassword(ctx, parseRegisterRequestPassword(req), userId); err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
-		tokenCode, err := helper.GenerateOTP(6)
+		otpCode, err := helper.GenerateOTP(6)
 		if err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
-		value := fmt.Sprintf("%f-%s", userId, req.Email)
-		if err := token.SetToken(ctx, "user", value, tokenCode); err != nil {
+		otpValue := fmt.Sprintf("%f-%s", userId, req.Email)
+		if err := otp.SetOTP(ctx, "user", otpCode, otpValue); err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
 
 		subject := "Userland Email Verification!"
-		msg := fmt.Sprintf("Use this otp for verify your email: %s", tokenCode)
+		msg := fmt.Sprintf("Use this otp for verify your email: %s", otpCode)
 
 		go email.SendEmail(req.Email, subject, msg)
 
 		if err := render.Render(w, r, helper.SuccesRenderer()); err != nil {
+			log.Error().Err(err).Stack().Msg(err.Error())
 			render.Render(w, r, helper.InternalServerErrorRenderer(err))
 			return
 		}

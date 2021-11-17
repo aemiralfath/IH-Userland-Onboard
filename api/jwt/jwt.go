@@ -1,4 +1,4 @@
-package helper
+package jwt
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
 	"github.com/lestrrat-go/jwx/jwa"
 	"github.com/lestrrat-go/jwx/jwt"
 )
@@ -24,11 +25,24 @@ type JWTAuth struct {
 	verifier  jwt.ParseOption
 }
 
+type Token struct {
+	Value     string    `json:"value"`
+	Type      string    `json:"type"`
+	ExpiredAt time.Time `json:"expired_at"`
+	JTI       string    `json:"-"`
+}
+
+type TokenClaims struct {
+	UserID float64
+	Id     string
+	Exp    time.Time
+}
+
 var (
 	TokenCtxKey            = &contextKey{"Token"}
 	ErrorCtxKey            = &contextKey{"Error"}
-	AccessTokenExpiration  = 300 * 1000000000
-	RefreshTokenExpiration = 86400 * 1000000000
+	AccessTokenExpiration  = 15
+	RefreshTokenExpiration = 60
 )
 
 var (
@@ -122,6 +136,28 @@ func Authenticator(next http.Handler) http.Handler {
 	})
 }
 
+func (jwtAuth JWTAuth) CreateToken(userID float64, email string, minute int) (*Token, string, error) {
+	jti := helper.GenerateRandomID()
+	expires_at := time.Now().Add(time.Duration(minute) * time.Minute)
+
+	accessTokenClaims := make(map[string]interface{})
+	accessTokenClaims["id"] = jti
+	accessTokenClaims["email"] = email
+	accessTokenClaims["userID"] = userID
+	accessTokenClaims["exp"] = expires_at
+
+	_, tokenString, err := jwtAuth.Encode(accessTokenClaims)
+	if err != nil {
+		return nil, jti, err
+	}
+
+	return &Token{
+		Value:     tokenString,
+		Type:      "BEARER",
+		ExpiredAt: expires_at,
+	}, jti, nil
+}
+
 type contextKey struct {
 	name string
 }
@@ -213,28 +249,4 @@ func (ja *JWTAuth) sign(token jwt.Token) ([]byte, error) {
 
 func (ja *JWTAuth) parse(payload []byte) (jwt.Token, error) {
 	return jwt.Parse(payload, ja.verifier)
-}
-
-func SetIssuedAt(claims map[string]interface{}, tm time.Time) {
-	claims["iat"] = tm.UTC().Unix()
-}
-
-func SetIssuedNow(claims map[string]interface{}) {
-	claims["iat"] = EpochNow()
-}
-
-func SetExpiry(claims map[string]interface{}, tm time.Time) {
-	claims["exp"] = tm.UTC().Unix()
-}
-
-func SetExpiryIn(claims map[string]interface{}, tm time.Duration) {
-	claims["exp"] = ExpireIn(tm)
-}
-
-func EpochNow() int64 {
-	return time.Now().UTC().Unix()
-}
-
-func ExpireIn(tm time.Duration) int64 {
-	return EpochNow() + int64(tm.Seconds())
 }

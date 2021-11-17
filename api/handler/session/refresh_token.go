@@ -1,17 +1,16 @@
-package me
+package session
 
 import (
-	"database/sql"
 	"fmt"
 	"net/http"
 
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
 	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
-	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/go-chi/render"
+	"github.com/rs/zerolog/log"
 )
 
-func GetEmail(jwtAuth jwt.JWTAuth, userStore datastore.UserStore) http.HandlerFunc {
+func GetRefreshToken(jwtAuth jwt.JWTAuth) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		_, claims, err := jwt.FromContext(ctx)
@@ -21,19 +20,17 @@ func GetEmail(jwtAuth jwt.JWTAuth, userStore datastore.UserStore) http.HandlerFu
 		}
 
 		userId := claims["userID"]
-		email, err := userStore.GetEmailByID(ctx, userId.(float64))
+		userEmail := claims["email"]
+
+		refreshToken, _, err := jwtAuth.CreateToken(userId.(float64), userEmail.(string), jwt.RefreshTokenExpiration)
 		if err != nil {
-			if err == sql.ErrNoRows {
-				render.Render(rw, r, helper.BadRequestErrorRenderer(fmt.Errorf("User not found")))
-				return
-			} else {
-				render.Render(rw, r, helper.InternalServerErrorRenderer(err))
-				return
-			}
+			log.Error().Err(err).Stack().Msg(err.Error())
+			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
+			return
 		}
 
 		helper.CustomRender(rw, http.StatusOK, map[string]interface{}{
-			"email": email,
+			"refresh_token": refreshToken,
 		})
 	}
 }

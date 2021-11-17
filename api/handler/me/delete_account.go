@@ -1,11 +1,13 @@
 package me
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/aemiralfath/IH-Userland-Onboard/api/helper"
+	"github.com/aemiralfath/IH-Userland-Onboard/api/jwt"
 	"github.com/aemiralfath/IH-Userland-Onboard/datastore"
 	"github.com/go-chi/render"
 )
@@ -14,7 +16,7 @@ type deleteAccountRequest struct {
 	Password string `json:"password"`
 }
 
-func DeleteAccount(jwtAuth helper.JWTAuth, userStore datastore.UserStore) http.HandlerFunc {
+func DeleteAccount(jwtAuth jwt.JWTAuth, userStore datastore.UserStore) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		req := &deleteAccountRequest{}
@@ -24,7 +26,7 @@ func DeleteAccount(jwtAuth helper.JWTAuth, userStore datastore.UserStore) http.H
 			return
 		}
 
-		_, claims, err := helper.FromContext(ctx)
+		_, claims, err := jwt.FromContext(ctx)
 		if err != nil {
 			fmt.Println(render.Render(rw, r, helper.BadRequestErrorRenderer(err)))
 			return
@@ -32,12 +34,14 @@ func DeleteAccount(jwtAuth helper.JWTAuth, userStore datastore.UserStore) http.H
 
 		emailUser := claims["email"]
 		usr, err := userStore.GetUserByEmail(ctx, emailUser.(string))
-		if usr == nil {
-			render.Render(rw, r, helper.BadRequestErrorRenderer(err))
-			return
-		} else if err != nil {
-			fmt.Println(render.Render(rw, r, helper.InternalServerErrorRenderer(err)))
-			return
+		if err != nil {
+			if err == sql.ErrNoRows {
+				render.Render(rw, r, helper.BadRequestErrorRenderer(fmt.Errorf("User not found")))
+				return
+			} else {
+				render.Render(rw, r, helper.InternalServerErrorRenderer(err))
+				return
+			}
 		}
 
 		if err := helper.ConfirmPassword(usr.Password, req.Password); err != nil {
@@ -45,7 +49,7 @@ func DeleteAccount(jwtAuth helper.JWTAuth, userStore datastore.UserStore) http.H
 			return
 		}
 
-		if err := userStore.SafeDeleteUser(ctx, emailUser.(string)); err != nil {
+		if err := userStore.SoftDeleteUser(ctx, emailUser.(string)); err != nil {
 			render.Render(rw, r, helper.InternalServerErrorRenderer(err))
 			return
 		}
