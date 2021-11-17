@@ -17,12 +17,17 @@ type usecase struct {
 	me      *me.UsecaseMe
 }
 
-func initUseCase(db *sql.DB, redis *redis.Client) *usecase {
+func initUseCase(db *sql.DB, redis *redis.Client) (*usecase, error) {
 	r := initRepository(db, redis)
+	auth, err := auth.New(r.auth)
+	if err != nil {
+		return &usecase{}, err
+	}
+
 	return &usecase{
 		status:  status.New(r.status),
-		auth:    auth.New(r.auth),
+		auth:    auth,
 		session: session.New(r.session),
 		me:      me.New(r.me),
-	}
+	}, nil
 }

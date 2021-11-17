@@ -59,7 +59,10 @@ func New(serverCfg AppConfig, postgresCfg postgres.PostgresConfig, redisCfg myre
 
 func (app *App) createHandlers() http.Handler {
 	r := chi.NewRouter()
-	d := initDelivery(app.DB, app.Redis)
+	d, err := initDelivery(app.DB, app.Redis)
+	if err != nil {
+		log.Error().Err(err).Stack().Msg("failed to connect to kafka")
+	}
 
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"https://*", "http://*"},

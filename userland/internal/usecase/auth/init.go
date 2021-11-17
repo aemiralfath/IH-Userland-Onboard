@@ -5,6 +5,7 @@ import (
 
 	"github.com/aemiralfath/IH-Userland-Onboard/userland/internal/model"
 	"github.com/aemiralfath/IH-Userland-Onboard/userland/internal/model/entity"
+	"github.com/aemiralfath/IH-Userland-Onboard/userland/pkg/kafka"
 )
 
 type authRepo interface {
@@ -16,11 +17,18 @@ type authRepo interface {
 }
 
 type UsecaseAuth struct {
-	auth authRepo
+	auth  authRepo
+	kafka kafka.Kafka
 }
 
-func New(repo authRepo) *UsecaseAuth {
-	return &UsecaseAuth{
-		auth: repo,
+func New(repo authRepo) (*UsecaseAuth, error) {
+	kafka, err := kafka.NewKafka()
+	if err != nil {
+		return &UsecaseAuth{}, err
 	}
+
+	return &UsecaseAuth{
+		auth:  repo,
+		kafka: kafka,
+	}, nil
 }

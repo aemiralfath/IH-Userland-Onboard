@@ -163,7 +163,7 @@ Table status {
   id VARCHAR(128) [pk]
   profile_id VARCHAR(128) [ref: > profile.id]
   place_id VARCHAR(255) [ref: > place.id]
-is_guest BOOLEAN
+  is_guest BOOLEAN
   checkin_at timestamptz
   checkout_at timestamptz
   updated_at timestamptz
@@ -191,6 +191,17 @@ Table session {
   ip VARCHAR(128)
   client VARCHAR(128)
   created_at timestamptz
+  
+  indexes{
+    user_id
+  }
+}
+
+Table audit_logs {
+  id VARCHAR(128) [pk]
+  user_id VARCHAR(128) [ref: > user.id]
+  remote_ip VARCHAR(128)
+  username VARCHAR(128)
   
   indexes{
     user_id

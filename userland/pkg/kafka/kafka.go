@@ -12,34 +12,38 @@ type Kafka interface {
 }
 
 type KafkaConfluentinc struct {
-	Config *kafka.ConfigMap
+	Config   *kafka.ConfigMap
+	Producer *kafka.Producer
 }
 
-func NewKafka() Kafka {
-	return &KafkaConfluentinc{
-		Config: &kafka.ConfigMap{
-			"bootstrap.servers": fmt.Sprintf("%s:%s", os.Getenv("KAFKA_HOST"), os.Getenv("KAFKA_PORT")),
-		},
+func NewKafka() (Kafka, error) {
+	config := &kafka.ConfigMap{
+		"bootstrap.servers": fmt.Sprintf("%s:%s", os.Getenv("KAFKA_HOST"), os.Getenv("KAFKA_PORT")),
 	}
+
+	producer, err := kafka.NewProducer(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return &KafkaConfluentinc{
+		Config:   config,
+		Producer: producer,
+	}, nil
 }
 
 func (k *KafkaConfluentinc) SendMessage(topic string, message []byte) error {
-	producer, err := kafka.NewProducer(k.Config)
-	if err != nil {
-		return err
-	}
-
-	defer producer.Close()
-
-	err = producer.Produce(&kafka.Message{
+	err := k.Producer.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 		Value:          message,
 	}, nil)
 
-	go deliver(producer)
+	go deliver(k.Producer)
 
 	// Wait for message deliveries before shutting down
-	producer.Flush(15 * 1000)
+	// defer k.Producer.Close()
+
+	k.Producer.Flush(15 * 1000)
 
 	return err
 }

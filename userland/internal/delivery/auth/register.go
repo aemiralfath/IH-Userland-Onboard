@@ -41,7 +41,7 @@ func (d *DeliveryAuth) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := d.auth.Register(ctx, body)
+	_, err := d.auth.Register(ctx, body)
 	if err != nil {
 		e, ok := err.(*myerror.Error)
 		if !ok {
@@ -52,5 +52,5 @@ func (d *DeliveryAuth) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.Write(w, http.StatusOK, "success", res, "")
+	response.Write(w, http.StatusOK, "success", nil, "")
 }

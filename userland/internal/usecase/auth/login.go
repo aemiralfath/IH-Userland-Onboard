@@ -6,7 +6,6 @@ import (
 
 	"github.com/aemiralfath/IH-Userland-Onboard/userland/internal/model"
 	"github.com/aemiralfath/IH-Userland-Onboard/userland/pkg/jwt"
-	"github.com/aemiralfath/IH-Userland-Onboard/userland/pkg/kafka"
 	"github.com/aemiralfath/IH-Userland-Onboard/userland/pkg/myerror"
 	"github.com/rs/zerolog/log"
 )
@@ -33,7 +32,7 @@ func (u *UsecaseAuth) Login(ctx context.Context, ip, clientName string, body mod
 		"userid":    user.ID,
 	})
 
-	if err := kafka.NewKafka().SendMessage(topic, message); err != nil {
+	if err := u.kafka.SendMessage(topic, message); err != nil {
 		log.Error().Err(err).Stack().Msg(err.Error())
 		return result, myerror.New("Error create kafka message.", "AUTH-USC-04")
 	}
